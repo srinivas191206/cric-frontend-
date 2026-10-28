@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TRAJECTA AI | Cricket Bowling Analysis & Session Tracking</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css?v=3.5">
+  <!-- Three.js 3D Stadium DRS Engine -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+</head>
+<body class="light-theme">
+
+  <!-- ========================================================
+       TRAJECTA.AI — AWWWARDS-CALIBER DASHBOARD APPLICATION SHELL
+  ======================================================== -->
+  <div class="dashboard-app-wrapper" id="dashboard-app">
+
+    <!-- ========================================================
+         LEFT DASHBOARD SIDEBAR NAVIGATION
+    ======================================================== -->
+    <aside class="dashboard-sidebar" id="dashboard-sidebar">
+      
+      <!-- Brand Header -->
+      <div class="sidebar-brand-box">
+        <a href="javascript:void(0)" onclick="switchDashboardView('overview')" class="sidebar-logo-link" title="TRAJECTA.ai">
+          <img src="/static/trajecta_logo_tight.png" alt="TRAJECTA.ai" class="sidebar-brand-logo" />
+        </a>
+        <div class="sidebar-brand-badge-row">
+          <span class="sidebar-brand-tag">CRICKET INTELLIGENCE OS</span>
+          <span class="sidebar-version-pill">v2.4 Pro</span>
+        </div>
+      </div>
+
+      <!-- Main Navigation Menu -->
+      <nav class="sidebar-nav-container">
+        <div class="sidebar-group-label">INTELLIGENCE &amp; VISION</div>
+        
+        <button type="button" class="sidebar-nav-item active" data-view="overview" onclick="switchDashboardView('overview')">
+          <span class="sidebar-nav-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+          </span>
+          <span class="sidebar-nav-text">Insights Command Center</span>
+          <span class="sidebar-nav-pill">Live</span>
+        </button>
+
+        <button type="button" class="sidebar-nav-item" data-view="delivery-studio" onclick="switchDashboardView('delivery-studio')">
+          <span class="sidebar-nav-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          </span>
+          <span class="sidebar-nav-text">Delivery Vision Studio</span>
+        </button>
+
+        <button type="button" class="sidebar-nav-item" data-view="spell-insights" onclick="switchDashboardView('spell-insights')">
+          <span class="sidebar-nav-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          </span>
+          <span class="sidebar-nav-text">Spell Analytics &amp; Map</span>
+          <span class="sidebar-nav-badge">5-Ball</span>
+        </button>
+
+        <button type="button" class="sidebar-nav-item" data-view="stadium-3d" onclick="openStadiumDRSModal()">
+          <span class="sidebar-nav-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+          </span>
+          <span class="sidebar-nav-text">3D Stadium DRS</span>
+          <span class="sidebar-nav-tag-hot">3D</span>
+        </button>
+      </nav>
+
+      <!-- Active Bowler Profile Card with Edit Option (Bottom of Sidebar) -->
+      <div class="sidebar-bowler-card sidebar-bowler-card-bottom" onclick="onSidebarBowlerCardClick(event)" title="Active Bowler Spell · Click to open Delivery Vision Studio">
+        <div class="sidebar-bowler-avatar" id="sidebar-bowler-avatar-container">
+          <span id="sidebar-bowler-initials">SA</span>
+          <img id="sidebar-bowler-img" class="sidebar-bowler-img hidden" src="" alt="Bowler" />
+        </div>
+        <div class="sidebar-bowler-meta">
+          <span class="sidebar-bowler-name" id="sidebar-bowler-name">sandy</span>
+          <span class="sidebar-bowler-style" id="sidebar-bowler-style">Right-arm Fast</span>
+        </div>
+        <div class="sidebar-bowler-right">
+          <span class="sidebar-spell-badge" id="sidebar-spell-progress">8/3 b</span>
+          <button type="button" class="sidebar-bowler-edit-btn" onclick="openEditBowlerModal(event)" title="Edit Bowler &amp; Spell Details" aria-label="Edit Bowler Profile">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Sidebar Footer -->
+      <div class="sidebar-footer">
+        <div class="sidebar-engine-status">
+          <span class="engine-pulse-dot"></span>
+          <span class="engine-label">YOLO11 Neural Vision Ready</span>
+        </div>
+        <div class="sidebar-footer-row">
+          <span class="sidebar-mcc-tag">20.12m MCC Pitch</span>
+          <button type="button" class="sidebar-theme-toggle" onclick="toggleAppTheme()" title="Toggle Light/Dark Theme">
+            <span id="sidebar-theme-icon">Theme Mode</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Mobile Sidebar Backdrop -->
+    <div class="sidebar-mobile-backdrop hidden" id="sidebar-mobile-backdrop" onclick="closeMobileSidebar()"></div>
+
+    <!-- ========================================================
+         MAIN DASHBOARD WORKSPACE AREA
+    ======================================================== -->
+    <div class="dashboard-main-area">
+
+      <!-- Top Command Header Bar -->
+      <header class="dashboard-topbar">
+        <div class="topbar-left">
+          <button type="button" class="topbar-menu-toggle" onclick="toggleMobileSidebar()" aria-label="Toggle Navigation">
+            <span></span><span></span><span></span>
+          </button>
+          <div class="topbar-breadcrumb">
+            <span class="breadcrumb-root">Dashboard</span>
+            <span class="breadcrumb-sep">/</span>
+            <span class="breadcrumb-current" id="topbar-breadcrumb-title">Insights Command Center</span>
+          </div>
+        </div>
+
+        <div class="topbar-center">
+          <!-- Active Spell Quick Switcher -->
+          <div class="topbar-session-switcher">
+            <span class="switcher-dot"></span>
+            <span class="switcher-label">Spell:</span>
+            <select id="session-select" class="topbar-session-select" onchange="switchActiveSession(this.value)">
+              <option value="">-- No Active Session --</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <!-- Light / Dark Mode Toggle Pill -->
+          <button type="button" class="theme-toggle-pill" id="theme-toggle-btn" onclick="toggleAppTheme()" aria-label="Toggle light or dark theme" title="Toggle Light/Dark Theme">
+            <span class="theme-opt theme-opt-light" id="theme-icon-sun">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            </span>
+            <span class="theme-opt theme-opt-dark" id="theme-icon-moon">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            </span>
+            <span class="theme-toggle-thumb"></span>
+          </button>
+
+          <button type="button" class="btn-topbar-stadium" onclick="openStadiumDRSModal()" title="View in 3D Narendra Modi Stadium DRS">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            <span class="btn-text">3D DRS</span>
+          </button>
+
+          <button type="button" class="btn-topbar-new-spell" onclick="showNewSessionScreen()" title="Start New Bowling Spell">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>New Spell</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Main Content Viewport -->
+      <main class="dashboard-content-viewport">
+
+        <!-- ========================================================
+             VIEW PANEL 1: COMMAND CENTER & BOWLING INSIGHTS
+        ======================================================== -->
+        <section id="view-overview" class="dashboard-view-panel">
+
+          <!-- Executive Bowling Spell Intelligence Banner -->
+          <div class="overview-banner-card">
+            <div class="banner-left">
+              <div class="banner-badge-live">● BOWLING SPELL PERFORMANCE INTELLIGENCE</div>
+              <h2 id="banner-bowler-heading">Jasprit Bumrah · Outswing Good Length Channel</h2>
+              <p class="banner-caption" id="banner-bowler-sub">Right-arm Fast · 20.12m MCC Pitch Calibrated · 5-Ball Target Spell</p>
+            </div>
+            <div class="banner-quick-stats">
+              <div class="quick-stat-box">
+                <span class="qs-lbl">PEAK PACE</span>
+                <span class="qs-val" id="qs-peak-speed">148.0 km/h</span>
+              </div>
+              <div class="quick-stat-box">
+                <span class="qs-lbl">TARGET CORRIDOR</span>
+                <span class="qs-val text-green" id="qs-corridor-status">Good Length (80%)</span>
+              </div>
+              <div class="quick-stat-box">
+                <span class="qs-lbl">STUMPS THREAT</span>
+                <span class="qs-val text-crimson" id="qs-threat-status">87% Projected</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 6 Key Bowling Intelligence Analytics Cards Grid -->
+          <div class="overview-kpi-grid">
+            <!-- 1. Velocity Profile -->
+            <div class="overview-kpi-card" onclick="switchDashboardView('spell-insights')">
+              <div class="okpi-header">
+                <span class="okpi-label">DELIVERY VELOCITY</span>
+                <span class="okpi-icon-pill icon-red">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                </span>
+              </div>
+              <div class="okpi-val-row">
+                <span class="okpi-val" id="okpi-avg-speed">142.4</span>
+                <span class="okpi-unit">km/h</span>
+              </div>
+              <span class="okpi-sub" id="okpi-speed-range">Peak: 148.0 km/h · Min: 136.0 km/h (88.5 mph)</span>
+              <div class="okpi-bar"><div class="okpi-bar-fill fill-red" style="width: 88%;"></div></div>
+            </div>
+
+            <!-- 2. Good Length Accuracy -->
+            <div class="overview-kpi-card" onclick="switchDashboardView('spell-insights')">
+              <div class="okpi-header">
+                <span class="okpi-label">GOOD LENGTH ACCURACY</span>
+                <span class="okpi-icon-pill icon-green">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg>
+                </span>
+              </div>
+              <div class="okpi-val-row">
+                <span class="okpi-val" id="okpi-length-pct">80%</span>
+                <span class="okpi-unit">Target</span>
+              </div>
+              <span class="okpi-sub">4 of 5 balls pitched in 4.5m – 6.0m corridor</span>
+              <div class="okpi-bar"><div class="okpi-bar-fill fill-green" style="width: 80%;"></div></div>
+            </div>
+
+            <!-- 3. Off-Stump Channel Alignment -->
+            <div class="overview-kpi-card" onclick="switchDashboardView('delivery-studio')">
+              <div class="okpi-header">
+                <span class="okpi-label">OFF-STUMP DISCIPLINE</span>
+                <span class="okpi-icon-pill icon-blue">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
+                </span>
+              </div>
+              <div class="okpi-val-row">
+                <span class="okpi-val">Outside Off</span>
+                <span class="okpi-unit">Channel</span>
+              </div>
+              <span class="okpi-sub">Target corridor: 4th &amp; 5th stump alignment</span>
+              <div class="okpi-bar"><div class="okpi-bar-fill fill-blue" style="width: 75%;"></div></div>
+            </div>
+
+            <!-- 4. Aerodynamic Swing & Deviation -->
+            <div class="overview-kpi-card" onclick="switchDashboardView('spell-insights')">
+              <div class="okpi-header">
+                <span class="okpi-label">AERO SWING &amp; SEAM</span>
+                <span class="okpi-icon-pill icon-purple">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 18 C 10 6, 20 6, 20 18"/></svg>
+                </span>
+              </div>
+              <div class="okpi-val-row">
+                <span class="okpi-val" id="okpi-swing-val">0.42</span>
+                <span class="okpi-unit">sf</span>
+              </div>
+              <span class="okpi-sub">Late outswing deviation · Seam angle: 4.8°</span>
+              <div class="okpi-bar"><div class="okpi-bar-fill fill-purple" style="width: 70%;"></div></div>
+            </div>
+
+            <!-- 5. Release Point Mechanics -->
+            <div class="overview-kpi-card" onclick="switchDashboardView('spell-insights')">
+              <div class="okpi-header">
+                <span class="okpi-label">RELEASE HEIGHT</span>
+                <span class="okpi-icon-pill icon-amber">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M8 6l4-4 4 4"/></svg>
+                </span>
+              </div>
+              <div class="okpi-val-row">
+                <span class="okpi-val" id="okpi-release-val">2.14</span>
+                <span class="okpi-unit">m</span>
+              </div>
+              <span class="okpi-sub">7' 0" release height · High over-the-wicket arm slot</span>
+              <div class="okpi-bar"><div class="okpi-bar-fill fill-amber" style="width: 82%;"></div></div>
+            </div>
+
+            <!-- 6. Stumps Threat / Wicket Probability -->
+            <div class="overview-kpi-card" onclick="openStadiumDRSModal()">
+              <div class="okpi-header">
+                <span class="okpi-label">STUMPS IMPACT RATING</span>
+                <span class="okpi-icon-pill icon-crimson">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="3" x2="8" y2="21"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="16" y1="3" x2="16" y2="21"/><line x1="5" y1="4" x2="19" y2="4"/></svg>
+                </span>
+              </div>
+              <div class="okpi-val-row">
+                <span class="okpi-val" id="okpi-stumps-val">87%</span>
+                <span class="okpi-unit">Threat</span>
+              </div>
+              <span class="okpi-sub">High bail &amp; off-stump impact in 3D DRS</span>
+              <div class="okpi-bar"><div class="okpi-bar-fill fill-crimson" style="width: 87%;"></div></div>
+            </div>
+          </div>
+
+          <!-- Video Upload & Analysis Action Bar -->
+          <div class="command-upload-card" id="command-upload-hub">
+            <div class="cuc-header-row">
+              <div class="cuc-title-group">
+                <span class="cuc-badge">COMPUTER VISION UPLOAD STUDIO</span>
+                <h3 class="cuc-title">Analyze New Bowling Video</h3>
+                <p class="cuc-sub">Drop smartphone, GoPro, or match footage. YOLO11 neural tracking automatically reconstructs ball velocity, release point, pitch bounce coordinate, and post-bounce deviation.</p>
+              </div>
+              <div class="cuc-header-actions">
+                <button type="button" class="btn-cuc-studio" onclick="switchDashboardView('delivery-studio')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+                  <span>Open Delivery Vision Studio</span>
+                </button>
+                <button type="button" class="btn-cuc-drs" onclick="openStadiumDRSModal()">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                  <span>3D Stadium DRS</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Drag & Drop Zone inside Command Center -->
+            <div class="command-drop-zone" id="cmd-drop-zone" onclick="handleCommandDropClick()">
+              <input type="file" id="cmd-file-input" accept="video/*" class="hidden" onchange="handleCommandFileSelect(event)" />
+              <div class="cmd-drop-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="14" height="14" rx="2"/><polygon points="22 8 16 12 22 16 22 8"/><line x1="9" y1="9" x2="9" y2="15"/><line x1="6" y1="12" x2="12" y2="12"/></svg>
+              </div>
+              <div class="cmd-drop-text-group">
+                <span class="cmd-drop-main">Drag and drop bowling clip here, or <strong class="text-crimson">browse file</strong></span>
+                <span class="cmd-drop-sub">Supported Formats: MP4, MOV, WEBM · Calibrated for 20.12m MCC pitch dimensions</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Two-Column Deep-Dive Analytics Row -->
+          <div class="command-two-col-grid">
+            <!-- Left: Pitch Length Distribution Breakdown -->
+            <div class="analytics-card" id="command-length-card">
+              <div class="card-head-row">
+                <div class="card-title-group">
+                  <span class="card-tag">PITCH MAP GEOMETRY</span>
+                  <h4 class="card-heading">Length Corridor Distribution</h4>
+                </div>
+                <button type="button" class="btn-card-link" onclick="switchDashboardView('spell-insights')">
+                  <span>Hawk-Eye Map</span>
+                  <span class="card-link-arrow">→</span>
+                </button>
+              </div>
+
+              <div class="zone-distribution-list">
+                <!-- Good Length -->
+                <div class="zone-dist-item">
+                  <div class="zdi-label-row">
+                    <span class="zdi-name text-green">Good Length (4.5m – 6.0m)</span>
+                    <span class="zdi-stat" id="zdi-good-stat">80% (4 balls)</span>
+                  </div>
+                  <div class="zdi-bar-track">
+                    <div class="zdi-bar-fill fill-green" id="zdi-good-bar" style="width: 80%;"></div>
+                  </div>
+                </div>
+
+                <!-- Full Length -->
+                <div class="zone-dist-item">
+                  <div class="zdi-label-row">
+                    <span class="zdi-name text-blue">Full Length (2.5m – 4.5m)</span>
+                    <span class="zdi-stat" id="zdi-full-stat">20% (1 ball)</span>
+                  </div>
+                  <div class="zdi-bar-track">
+                    <div class="zdi-bar-fill fill-blue" id="zdi-full-bar" style="width: 20%;"></div>
+                  </div>
+                </div>
+
+                <!-- Back of Length -->
+                <div class="zone-dist-item">
+                  <div class="zdi-label-row">
+                    <span class="zdi-name text-amber">Back of a Length (6.0m – 8.0m)</span>
+                    <span class="zdi-stat" id="zdi-back-stat">0% (0 balls)</span>
+                  </div>
+                  <div class="zdi-bar-track">
+                    <div class="zdi-bar-fill fill-amber" id="zdi-back-bar" style="width: 0%;"></div>
+                  </div>
+                </div>
+
+                <!-- Yorker -->
+                <div class="zone-dist-item">
+                  <div class="zdi-label-row">
+                    <span class="zdi-name text-crimson">Yorker (0.0m – 2.5m)</span>
+                    <span class="zdi-stat" id="zdi-yorker-stat">0% (0 balls)</span>
+                  </div>
+                  <div class="zdi-bar-track">
+                    <div class="zdi-bar-fill fill-red" id="zdi-yorker-bar" style="width: 0%;"></div>
+                  </div>
+                </div>
+
+                <!-- Short -->
+                <div class="zone-dist-item">
+                  <div class="zdi-label-row">
+                    <span class="zdi-name text-muted">Short / Bouncer (&gt; 8.0m)</span>
+                    <span class="zdi-stat" id="zdi-short-stat">0% (0 balls)</span>
+                  </div>
+                  <div class="zdi-bar-track">
+                    <div class="zdi-bar-fill fill-steel" id="zdi-short-bar" style="width: 0%;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Line Alignment & Seam Mechanics -->
+            <div class="analytics-card" id="command-line-card">
+              <div class="card-head-row">
+                <div class="card-title-group">
+                  <span class="card-tag">LATERAL TRAJECTORY</span>
+                  <h4 class="card-heading">Stumps Line &amp; Lateral Drift</h4>
+                </div>
+                <button type="button" class="btn-card-link" onclick="openStadiumDRSModal()">
+                  <span>3D Replay</span>
+                  <span class="card-link-arrow">→</span>
+                </button>
+              </div>
+
+              <div class="lateral-insights-grid">
+                <div class="line-stat-pill">
+                  <span class="lsp-label">CORRIDOR FOCUS</span>
+                  <span class="lsp-val text-blue">4th &amp; 5th Stump</span>
+                  <span class="lsp-sub">Uncertainty Channel</span>
+                </div>
+                <div class="line-stat-pill">
+                  <span class="lsp-label">BOUNCE ANGLE</span>
+                  <span class="lsp-val text-green">14.2° Pitch Exit</span>
+                  <span class="lsp-sub">Steep bounce off pitch</span>
+                </div>
+                <div class="line-stat-pill">
+                  <span class="lsp-label">SEAM DEVIATION</span>
+                  <span class="lsp-val text-purple">4.8° Lateral Nip</span>
+                  <span class="lsp-sub">Late post-bounce movement</span>
+                </div>
+                <div class="line-stat-pill">
+                  <span class="lsp-label">ESTIMATED WICKET</span>
+                  <span class="lsp-val text-crimson">87% Bails Hit</span>
+                  <span class="lsp-sub">Top of off stump DRS</span>
+                </div>
+              </div>
+
+              <!-- Technical Takeaways Strip -->
+              <div class="command-takeaways-box">
+                <div class="ctb-item">
+                  <span class="ctb-bullet"></span>
+                  <span class="ctb-text">Consistent 4th stump release angle creates outside edge threat to right-handed batsmen.</span>
+                </div>
+                <div class="ctb-item">
+                  <span class="ctb-bullet"></span>
+                  <span class="ctb-text">Seam orientation remains upright throughout delivery flight with 0.42 sf aerodynamic swing.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Active Spell Deliveries Table (Live Feed) -->
+          <div class="command-deliveries-card">
+            <div class="deliveries-card-head">
+              <div class="dch-title-group">
+                <span class="dch-tag">SESSION TELEMETRY LOG</span>
+                <h3 class="dch-title">Recorded Deliveries in Active Spell</h3>
+              </div>
+              <div class="dch-actions">
+                <button type="button" class="btn-dch-action" onclick="switchDashboardView('spell-insights')">
+                  <span>Full Spell Analytics</span>
+                </button>
+                <button type="button" class="btn-dch-action primary" onclick="showNewSessionScreen()">
+                  <span>New Spell Session</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="deliveries-table-container">
+              <table class="deliveries-table-light">
+                <thead>
+                  <tr>
+                    <th>BALL</th>
+                    <th>SPEED (KM/H &amp; MPH)</th>
+                    <th>PITCH LENGTH &amp; DIST</th>
+                    <th>LATERAL LINE</th>
+                    <th>AERO SWING</th>
+                    <th>SEAM DEVIATION</th>
+                    <th>ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody id="cmd-deliveries-tbody">
+                  <!-- Dynamically populated from active session -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </section> <!-- /#view-overview -->
+
+  <!-- ========================================================
+       VIEW PANEL 5: BOWLING SESSIONS & SPELLS MANAGER
+  ======================================================== -->
+  <section id="view-sessions" class="dashboard-view-panel hidden">
+    <section id="create-session-hero" class="create-session-hero">
+      <div class="hero-card">
+        <div class="hero-badge">CRICKET BOWLER TRAINING</div>
+        <h2>Start New Bowling Session</h2>
+        <p class="hero-sub">Record and analyze a multi-ball spell. The AI model tracks delivery speed, pitch length dispersion, aerodynamic swing, and 2D bounce heatmap.</p>
+
+        <form id="hero-create-session-form" class="hero-form" onsubmit="event.preventDefault(); submitCreateSessionFromHero();">
+          <div class="form-grid-2">
+            <div class="form-item">
+              <label for="hero-bowler-name">Bowler Name</label>
+              <input type="text" id="hero-bowler-name" class="input-light" placeholder="e.g. Jasprit Bumrah" required />
+            </div>
+            <div class="form-item">
+              <label for="hero-bowling-style">Bowling Style</label>
+              <select id="hero-bowling-style" class="input-light select-light">
+                <option value="Right-arm Fast" selected>Right-arm Fast</option>
+                <option value="Left-arm Fast">Left-arm Fast</option>
+                <option value="Right-arm Medium">Right-arm Medium</option>
+                <option value="Left-arm Medium">Left-arm Medium</option>
+                <option value="Right-arm Off-Spin">Right-arm Off-Spin</option>
+                <option value="Left-arm Orthodox">Left-arm Orthodox</option>
+                <option value="Right-arm Leg-Spin">Right-arm Leg-Spin</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-item">
+            <label for="hero-session-name">Spell / Session Title</label>
+            <input type="text" id="hero-session-name" class="input-light" placeholder="e.g. Morning Spell - Outside Off Channel" required />
+          </div>
+
+          <div class="form-item">
+            <label>Target Deliveries in Spell</label>
+            <div class="target-pills-row">
+              <button type="button" class="target-pill" data-balls="3" onclick="setHeroTargetBalls(3)">3 Deliveries</button>
+              <button type="button" class="target-pill active" data-balls="5" onclick="setHeroTargetBalls(5)">5 Deliveries (Recommended)</button>
+              <button type="button" class="target-pill" data-balls="6" onclick="setHeroTargetBalls(6)">6 Deliveries (Full Over)</button>
+            </div>
+            <input type="hidden" id="hero-target-balls-val" value="5" />
+          </div>
+
+          <div class="hero-action-row">
+            <button type="submit" class="btn-start-spell">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <span>Start Session &amp; Upload Deliveries</span>
+            </button>
+          </div>
+        </form>
+
+        <!-- Saved Sessions History List (if any exist) -->
+        <div id="saved-sessions-section" class="saved-sessions-list hidden">
+          <div class="saved-title-row">
+            <h4>Existing Training Sessions</h4>
+            <span class="saved-hint">Select to resume previous session</span>
+          </div>
+          <div id="saved-sessions-container" class="saved-grid">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+    </section>
+  </section> <!-- /#view-sessions -->
+
+  <!-- ========================================================
+       VIEW PANEL 2: DELIVERY VISION STUDIO
+  ======================================================== -->
+  <section id="view-delivery-studio" class="dashboard-view-panel hidden">
+    <div id="active-session-workspace" class="active-session-workspace">
+
+      <!-- Spell Status Bar -->
+      <div class="session-overview-card">
+        <div class="overview-left">
+          <div class="bowler-avatar-circle" id="studio-bowler-avatar-container">
+            <span id="bowler-initials">JB</span>
+            <img id="studio-bowler-img" class="bowler-avatar-img hidden" src="" alt="Bowler" />
+          </div>
+          <div class="overview-meta">
+            <div class="meta-row-1">
+              <h3 id="session-display-bowler">Jasprit Bumrah</h3>
+              <span id="session-display-style" class="badge-tag-style">Right-arm Fast</span>
+              <button type="button" class="btn-bowler-edit-inline" onclick="openEditBowlerModal(event)" title="Edit Bowler &amp; Spell Details">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                <span>Edit Profile</span>
+              </button>
+            </div>
+            <p id="session-display-title" class="session-title-sub">Morning Spell - Outside Off Channel</p>
+          </div>
+        </div>
+
+        <div class="overview-right">
+          <div class="progress-box">
+            <span class="progress-lbl">SPELL PROGRESS</span>
+            <div class="progress-figure">
+              <span id="session-progress-fraction" class="progress-big">0 / 5</span>
+              <span class="progress-unit">Deliveries</span>
+            </div>
+          </div>
+          <button type="button" class="btn-quick-new" onclick="showNewSessionScreen()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>New Spell</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Ball Timeline Carousel Strip -->
+      <div class="timeline-strip-card">
+        <div class="timeline-header">
+          <div class="timeline-head-left">
+            <span class="status-indicator-dot"></span>
+            <span class="timeline-head-title">BALL-BY-BALL TIMELINE</span>
+            <span id="timeline-status-text" class="timeline-hint">Select a ball to view delivery replay &amp; stats</span>
+          </div>
+          <button type="button" class="btn-scroll-insights" onclick="scrollToInsights()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            <span>Spell Analytics</span>
+          </button>
+        </div>
+        <div id="spell-timeline-balls" class="timeline-balls-row">
+          <!-- Dynamic timeline cards (Ball 1, Ball 2, Ball 3, Ball 4, Ball 5) -->
+        </div>
+      </div>
+
+      <!-- Workspace Two-Column Grid: Upload/Trim on Left | Player/Telemetry on Right -->
+      <div class="delivery-analysis-grid">
+
+        <!-- LEFT COLUMN: Delivery Video Upload & Trim Studio -->
+        <div class="column-card upload-studio-card">
+          <div class="card-head">
+            <div class="card-title-group">
+              <span class="head-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="14" height="14" rx="2"/><polygon points="22 8 16 12 22 16 22 8"/></svg>
+              </span>
+              <div>
+                <h4 id="upload-box-title">Upload Video for Ball 1</h4>
+                <p class="head-sub">Drag and drop delivery clip (bowler release to wickets)</p>
+              </div>
+            </div>
+            <span id="active-ball-badge" class="badge-active-ball">Ready for Delivery 1</span>
+          </div>
+
+          <!-- Drag and Drop Box -->
+          <div id="drop-zone" class="drop-zone-light">
+            <input type="file" id="file-input" accept="video/mp4,video/mov,video/avi,video/quicktime,video/webm" class="file-hidden">
+            <div class="drop-zone-inner">
+              <div class="upload-cloud-icon">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="1.8">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+              </div>
+              <p class="drop-title">Drop cricket delivery video here</p>
+              <p class="drop-sub">or <button type="button" class="btn-browse-light" onclick="triggerFileInput()">Browse File</button></p>
+              <span class="drop-formats">Supports MP4, MOV, AVI, WEBM</span>
+            </div>
+          </div>
+
+          <!-- VIDEO DELIVERY TRIMMER (Reveals when video file is loaded) -->
+          <div id="video-trim-card" class="trimmer-card hidden">
+            <div class="trimmer-head">
+              <span class="trim-title">Delivery Window Trimmer</span>
+              <span id="trim-duration-badge" class="badge-trim-dur">Selected: 0.0s</span>
+            </div>
+            <p class="trim-help">Scrub below to isolate the delivery moment from release to stumps for ultra-fast, pinpoint ball tracking.</p>
+
+            <div class="trim-video-container">
+              <video id="trim-preview-video" playsinline muted preload="auto"></video>
+              <div class="trim-time-badge" id="trim-playhead-time">00:00.0 / 00:00.0</div>
+              <button type="button" class="btn-trim-play" id="trim-play-btn" onclick="toggleTrimVideoPlay()">Play</button>
+            </div>
+
+            <!-- Scrubber Track -->
+            <div class="trim-scrubber-track">
+              <div class="track-bg">
+                <div id="timeline-highlight" class="track-highlight"></div>
+                <div id="timeline-cursor" class="track-cursor"></div>
+              </div>
+              <div class="range-handles-wrap">
+                <input type="range" id="trim-range-start" class="range-slider" min="0" max="100" step="0.05" value="0">
+                <input type="range" id="trim-range-end" class="range-slider" min="0" max="100" step="0.05" value="100">
+              </div>
+            </div>
+
+            <div class="trim-numeric-row">
+              <div class="numeric-input-box">
+                <label>Release (Start)</label>
+                <div class="input-unit-wrap">
+                  <input type="number" id="trim-start-num" min="0" step="0.1" value="0.0" class="num-input" onchange="syncTrimFromNumberInputs()">
+                  <span class="unit-lbl">s</span>
+                  <button type="button" class="btn-set-cur" onclick="setTrimStartToCurrentTime()">Set</button>
+                </div>
+              </div>
+              <div class="numeric-input-box">
+                <label>Wickets (End)</label>
+                <div class="input-unit-wrap">
+                  <input type="number" id="trim-end-num" min="0" step="0.1" value="0.0" class="num-input" onchange="syncTrimFromNumberInputs()">
+                  <span class="unit-lbl">s</span>
+                  <button type="button" class="btn-set-cur" onclick="setTrimEndToCurrentTime()">Set</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="trim-actions-row">
+              <button type="button" class="btn-preview-window" onclick="playTrimPreview()">
+                Preview Window
+              </button>
+              <button type="button" class="btn-run-analysis" id="btn-process-delivery" onclick="runDetection()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                <span id="btn-analyze-text">Analyze Delivery</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT COLUMN: Delivery Video Player & Live Telemetry -->
+        <div class="column-card player-studio-card">
+          <div class="card-head">
+            <div class="card-title-group">
+              <span class="head-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              </span>
+              <div>
+                <h4 id="player-title">Delivery Video &amp; Telemetry</h4>
+                <p id="player-subtitle" class="head-sub">AI Tracked Flight Arc &amp; Fulltrack HUD</p>
+              </div>
+            </div>
+            <span id="ball-status-badge" class="badge-ball-status">AWAITING VIDEO</span>
+          </div>
+
+          <!-- Video Viewport -->
+          <div class="viewport-box">
+            <!-- Loading Spinner -->
+            <div id="loading-overlay" class="loading-overlay-light hidden">
+              <div class="spinner-light"></div>
+              <p id="loading-text">Analyzing ball trajectory &amp; pitch impact...</p>
+            </div>
+
+            <!-- Empty State -->
+            <div id="empty-state" class="empty-state-light">
+              <div class="empty-icon-wrap">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M12 8v8M8 12h8"/>
+                </svg>
+              </div>
+              <h5>No Delivery Analyzed Yet</h5>
+              <p>Upload a delivery video on the left to track speed, swing, spin, and pitch bounce.</p>
+            </div>
+
+            <!-- Video Player -->
+            <div id="video-display-wrapper" class="video-wrapper hidden">
+              <video id="result-video" controls playsinline controlsList="nodownload"></video>
+            </div>
+          </div>
+
+          <!-- Live Delivery Metrics HUD Bar -->
+          <div class="telemetry-grid-card">
+            <div class="tele-box">
+              <span class="tele-lbl">BALL SPEED</span>
+              <div class="tele-main">
+                <span id="stat-speed-mph" class="tele-num text-red">—</span>
+                <span class="tele-unit">mph</span>
+              </div>
+              <span id="stat-speed-kph" class="tele-sub">— km/h</span>
+            </div>
+
+            <div class="tele-box">
+              <span class="tele-lbl">LENGTH ZONE</span>
+              <div class="tele-main">
+                <span id="stat-length-zone" class="tele-num text-green">—</span>
+              </div>
+              <span id="stat-bounce-dist" class="tele-sub">— from crease</span>
+            </div>
+
+            <div class="tele-box">
+              <span class="tele-lbl">LATERAL LINE</span>
+              <div class="tele-main">
+                <span id="stat-lateral-line" class="tele-num text-blue">—</span>
+              </div>
+              <span class="tele-sub">Wickets Alignment</span>
+            </div>
+
+            <div class="tele-box">
+              <span class="tele-lbl">AERO SWING</span>
+              <div class="tele-main">
+                <span id="stat-swing-val" class="tele-num text-purple">—</span>
+                <span class="tele-unit">sf</span>
+              </div>
+              <span id="stat-spin-sub" class="tele-sub">Spin: —°</span>
+            </div>
+          </div>
+
+          <!-- Action Bar: Download & 3D Stadium DRS -->
+          <div class="player-actions-row">
+            <button type="button" class="btn-open-stadium-drs" onclick="openStadiumDRSModal()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+              <span>View in 3D Stadium DRS</span>
+            </button>
+            <a id="download-btn" class="btn-download-analyzed hidden" href="#" download>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span>Download Analyzed Video (MP4)</span>
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </div> <!-- /#active-session-workspace -->
+  </section> <!-- /#view-delivery-studio -->
+
+  <!-- ========================================================
+       VIEW PANEL 3: SPELL ANALYTICS & MULTI-BALL HAWK-EYE
+  ======================================================== -->
+  <section id="view-spell-insights" class="dashboard-view-panel hidden">
+    <section id="spell-insights-section" class="spell-insights-section">
+        <div class="section-banner">
+          <div class="banner-title-wrap">
+            <span class="banner-badge">OVERALL SESSION PERFORMANCE</span>
+            <h3>Overall Session Performance & Multi-Ball Hawk-Eye</h3>
+            <p class="banner-sub">Complete spell metrics: mixed pitch map, continuous flight trajectories, release points analysis, side elevation view & pace variance.</p>
+          </div>
+          <div class="banner-actions">
+            <button type="button" class="btn-launch-multiball-3d" onclick="launchMultiBall3DStadium()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+              <span>Multi-Ball 3D Stadium DRS</span>
+            </button>
+            <button type="button" class="btn-export-summary" onclick="window.print()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+              <span>Print / Save Report</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 4 Top KPI Cards -->
+        <div class="insights-kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap icon-red">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            </div>
+            <div class="kpi-content">
+              <span class="kpi-label">AVERAGE PACE</span>
+              <div class="kpi-figure">
+                <span id="insights-avg-speed" class="kpi-num text-red">0.0</span>
+                <span class="kpi-unit">mph</span>
+              </div>
+              <span id="insights-speed-range" class="kpi-sub">Max: 0.0 · Min: 0.0 (0.0 km/h)</span>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap icon-blue">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M8 6l4-4 4 4"/></svg>
+            </div>
+            <div class="kpi-content">
+              <span class="kpi-label">AVG RELEASE HEIGHT</span>
+              <div class="kpi-figure">
+                <span id="insights-avg-release" class="kpi-num text-blue">2.15</span>
+                <span class="kpi-unit">m</span>
+              </div>
+              <span id="insights-release-spread" class="kpi-sub">7' 1" · Over Wicket Corridor</span>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap icon-amber">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 18 C 10 6, 20 6, 20 18"/></svg>
+            </div>
+            <div class="kpi-content">
+              <span class="kpi-label">AERO SWING &amp; SPIN</span>
+              <div class="kpi-figure">
+                <span id="insights-avg-swing" class="kpi-num text-amber">0.0</span>
+                <span class="kpi-unit">sf</span>
+              </div>
+              <span id="insights-avg-spin-sub" class="kpi-sub"><span id="insights-avg-spin">0.0</span>° Seam / Pitch Turn</span>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap icon-green">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg>
+            </div>
+            <div class="kpi-content">
+              <span class="kpi-label">SPELL CONSISTENCY</span>
+              <div class="kpi-figure">
+                <span id="insights-consistency" class="kpi-num text-green">0%</span>
+              </div>
+              <span class="kpi-sub">In Good Length / Full Corridor</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Performance Views Navigation Tabs -->
+        <div class="perf-tabs-bar">
+          <button type="button" class="perf-tab-btn active" data-view="all" onclick="setPerfView('all')">
+            <span>All Visualizations</span>
+          </button>
+          <button type="button" class="perf-tab-btn" data-view="pitch" onclick="setPerfView('pitch')">
+            <span>Mixed Pitch Map</span>
+          </button>
+          <button type="button" class="perf-tab-btn" data-view="side" onclick="setPerfView('side')">
+            <span>Side View Trajectory</span>
+          </button>
+          <button type="button" class="perf-tab-btn" data-view="release" onclick="setPerfView('release')">
+            <span>Release Mechanics</span>
+          </button>
+          <button type="button" class="perf-tab-btn" data-view="pace" onclick="setPerfView('pace')">
+            <span>Pace Progression</span>
+          </button>
+        </div>
+
+        <!-- Performance Cards Grid: Row 1 (Pitch Map & Side View) -->
+        <div class="perf-grid-row">
+
+          <!-- Card 1: 2D Pitch Map with Mixed Trajectories -->
+          <div class="perf-view-box pitch-heatmap-card" id="perf-box-pitch">
+            <div class="card-title-bar">
+              <div>
+                <h4>Mixed Balls 2D Pitch Map & Flight Paths</h4>
+                <p class="card-caption">All ball impact points & top-down trajectory paths across MCC regulation length zones.</p>
+              </div>
+              <div class="perf-card-controls">
+                <label class="perf-toggle-label" title="Toggle visible flight path trajectories on the pitch map">
+                  <input type="checkbox" id="toggle-pitch-trajectories" checked onchange="togglePitchTrajectories(this.checked)">
+                  <span>Flight Trajectories</span>
+                </label>
+                <span class="mcc-tag">MCC 20.12m</span>
+              </div>
+            </div>
+
+            <div class="canvas-box-light">
+              <canvas id="pitch-dispersion-canvas" width="480" height="640"></canvas>
+              <!-- Interactive Tooltip Overlay -->
+              <div id="pitch-ball-tooltip" class="pitch-tooltip-light hidden"></div>
+            </div>
+
+            <!-- Ball numbers color legend row -->
+            <div id="pitch-balls-legend" class="pitch-balls-legend-row">
+              <!-- Dynamically populated -->
+            </div>
+
+            <!-- Length Zones Legend -->
+            <div class="pitch-legend-row">
+              <span class="legend-pill zone-yorker">● Yorker (0-2m)</span>
+              <span class="legend-pill zone-full">● Full (2-4m)</span>
+              <span class="legend-pill zone-good">● Good Length (4-6m)</span>
+              <span class="legend-pill zone-back">● Back of Length (6-8m)</span>
+              <span class="legend-pill zone-short">● Short (8m+)</span>
+            </div>
+          </div>
+
+          <!-- Card 2: Pitch Side View (Elevation Flight Profile) -->
+          <div class="perf-view-box side-view-card" id="perf-box-side">
+            <div class="card-title-bar">
+              <div>
+                <h4>Pitch Side View · Elevation Trajectory Profile</h4>
+                <p class="card-caption">Side-on 22-yard flight arcs from bowler release through bounce to wickets arrival.</p>
+              </div>
+              <span class="mcc-tag stumps-tag">Regulation Stumps (28" / 0.71m)</span>
+            </div>
+
+            <div class="canvas-box-light side-canvas-box">
+              <canvas id="pitch-side-view-canvas" width="760" height="380"></canvas>
+              <!-- Interactive Side View Tooltip -->
+              <div id="side-view-tooltip" class="side-tooltip-light hidden"></div>
+            </div>
+
+            <!-- Side view quick guide chips -->
+            <div class="side-view-legend-row">
+              <span class="side-guide-pill guide-release">● Bowler Release (1.8m - 2.4m)</span>
+              <span class="side-guide-pill guide-bounce">● Turf Bounce Impact</span>
+              <span class="side-guide-pill guide-stumps">● Wickets Arrival (28" / 0.71m)</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Performance Cards Grid: Row 2 (Release Points & Speeds) -->
+        <div class="perf-grid-row">
+
+          <!-- Card 3: Bowler Release Points & Delivery Mechanics -->
+          <div class="perf-view-box release-points-card" id="perf-box-release">
+            <div class="card-title-bar">
+              <div>
+                <h4>Release Points & Delivery Corridor</h4>
+                <p class="card-caption">Frontal release window (batsman's eye view) comparing height and lateral arm positions.</p>
+              </div>
+              <span id="release-consistency-badge" class="mcc-tag release-badge">Release Grouping: High</span>
+            </div>
+
+            <div class="canvas-box-light release-canvas-box">
+              <canvas id="release-points-canvas" width="480" height="300"></canvas>
+              <!-- Interactive Release Point Tooltip -->
+              <div id="release-point-tooltip" class="release-tooltip-light hidden"></div>
+            </div>
+
+            <!-- Release Point Metrics Strip -->
+            <div class="release-metrics-grid">
+              <div class="release-metric-tile">
+                <span class="rm-lbl">AVG RELEASE HEIGHT</span>
+                <span id="release-avg-height" class="rm-val">2.15 m</span>
+                <span id="release-avg-height-ft" class="rm-sub">7 ft 0.6 in</span>
+              </div>
+              <div class="release-metric-tile">
+                <span class="rm-lbl">HEIGHT VARIANCE</span>
+                <span id="release-height-variance" class="rm-val">± 3.2 cm</span>
+                <span class="rm-sub">Repeatability: 95%</span>
+              </div>
+              <div class="release-metric-tile">
+                <span class="rm-lbl">LATERAL ARM CORRIDOR</span>
+                <span id="release-lateral-pos" class="rm-val">0.24 m</span>
+                <span class="rm-sub">Over the Wicket</span>
+              </div>
+              <div class="release-metric-tile">
+                <span class="rm-lbl">TRAJECTORY ANGLE</span>
+                <span id="release-angle" class="rm-val">11.6°</span>
+                <span class="rm-sub">Down to Turf</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 4: Speeds Variance & Pace Progression -->
+          <div class="perf-view-box pace-tracker-card" id="perf-box-pace">
+            <div class="card-title-bar">
+              <div>
+                <h4>Multi-Ball Speed Variance & Pace Progression</h4>
+                <p class="card-caption">Delivery-by-delivery speed comparison against spell average speed & pitch friction decay.</p>
+              </div>
+              <span class="mcc-tag pace-tag">Radar Precision (±0.5 mph)</span>
+            </div>
+
+            <!-- Dynamic Pace Progression Bar Chart -->
+            <div class="pace-chart-container">
+              <div id="pace-bars-container" class="pace-bars-chart">
+                <!-- Dynamically populated -->
+              </div>
+              <!-- Average speed benchmark line note -->
+              <div class="pace-benchmark-legend">
+                <span class="pace-legend-line"></span>
+                <span id="pace-benchmark-label">Session Average Pace Benchmark</span>
+              </div>
+            </div>
+
+            <!-- Speeds KPI Grid -->
+            <div class="pace-metrics-grid">
+              <div class="pace-metric-tile">
+                <span class="pm-lbl">TOP SPEED</span>
+                <span id="pace-max-speed" class="pm-val text-red">0.0 mph</span>
+                <span id="pace-max-speed-kph" class="pm-sub">0.0 km/h</span>
+              </div>
+              <div class="pace-metric-tile">
+                <span class="pm-lbl">LOWEST SPEED</span>
+                <span id="pace-min-speed" class="pm-val">0.0 mph</span>
+                <span id="pace-min-speed-kph" class="pm-sub">0.0 km/h</span>
+              </div>
+              <div class="pace-metric-tile">
+                <span class="pm-lbl">PACE SPREAD / DELTA</span>
+                <span id="pace-spread" class="pm-val">0.0 mph</span>
+                <span class="pm-sub">Variance across spell</span>
+              </div>
+              <div class="pace-metric-tile">
+                <span class="pm-lbl">POST-BOUNCE SPEED DECAY</span>
+                <span id="pace-decay" class="pm-val">~14.2%</span>
+                <span class="pm-sub">Turf friction drop</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Length Distribution & Coaching Advice Row -->
+        <div class="distribution-card">
+          <div class="card-title-bar">
+            <div>
+              <h4>Bowling Length Distribution</h4>
+              <p class="card-caption">Target discipline across the 5 bowling length zones.</p>
+            </div>
+          </div>
+
+          <div id="insights-length-bars" class="distribution-bars-list">
+            <!-- Dynamically populated -->
+          </div>
+
+          <div class="coaching-takeaway-box">
+            <div class="takeaway-head">
+              <span class="takeaway-icon">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+              </span>
+              <h5>Coaching Takeaway</h5>
+            </div>
+            <p id="coaching-takeaway-text">Deliver at least 60% of your balls in the Good Length corridor (4m - 6m) to trouble the batsman and maximize wicket probability.</p>
+          </div>
+        </div>
+
+        <!-- Delivery Comprehensive Log Table -->
+        <div class="deliveries-table-card">
+          <div class="card-title-bar">
+            <div>
+              <h4>Delivery-by-Delivery Comprehensive Log</h4>
+              <p class="card-caption">Individual metrics for every ball recorded in this training spell.</p>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table class="deliveries-table-light">
+              <thead>
+                <tr>
+                  <th>BALL #</th>
+                  <th>VIDEO CLIP</th>
+                  <th>SPEED (MPH / KPH)</th>
+                  <th>RELEASE HEIGHT</th>
+                  <th>LENGTH ZONE</th>
+                  <th>LATERAL LINE</th>
+                  <th>AERO SWING</th>
+                  <th>SEAM / SPIN</th>
+                  <th>REPLAY</th>
+                </tr>
+              </thead>
+              <tbody id="insights-deliveries-tbody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </section> <!-- /#spell-insights-section -->
+    </section> <!-- /#view-spell-insights -->
+
+  </main> <!-- /.dashboard-content-viewport -->
+</div> <!-- /.dashboard-main-area -->
+</div> <!-- /.dashboard-app-wrapper -->
+
+  <!-- ========================================================
+       3D STADIUM DRS ENVIRONMENT (NARENDRA MODI STADIUM)
+  ======================================================== -->
+  <div id="stadium-modal" class="stadium-modal-backdrop hidden">
+    <div class="stadium-modal-content">
+      <div class="stadium-header">
+        <div class="stadium-title-area">
+          <div class="stadium-badge-row">
+            <span class="stadium-badge-live">● 3D DRS ACTIVE</span>
+            <span class="stadium-badge-venue">Narendra Modi Stadium, Ahmedabad</span>
+          </div>
+          <h2>Virtual 3D Pitch Ball Flight Environment</h2>
+        </div>
+        <div class="stadium-controls-top">
+          <div class="stadium-camera-bar">
+            <button id="cam-btn-bowler" class="cam-btn active" onclick="setStadiumCamera('bowler')">Bowler POV</button>
+            <button id="cam-btn-ball_pov" class="cam-btn cam-btn-ball" onclick="setStadiumCamera('ball_pov')" title="Ball Flight Travel Perspective">Ball POV</button>
+            <button id="cam-btn-batsman" class="cam-btn" onclick="setStadiumCamera('batsman')">Batsman POV</button>
+            <button id="cam-btn-side" class="cam-btn" onclick="setStadiumCamera('side')">Hawkeye Side</button>
+            <button id="cam-btn-keeper" class="cam-btn" onclick="setStadiumCamera('keeper')">Keeper View</button>
+            <button id="cam-btn-aerial" class="cam-btn" onclick="setStadiumCamera('aerial')">Aerial High</button>
+            <button id="cam-btn-orbit" class="cam-btn" onclick="setStadiumCamera('orbit')">360° Free</button>
+            <button id="cam-btn-spell" class="cam-btn cam-btn-spell" onclick="toggleMultiBall3DOverlay()">Multi-Ball Spell</button>
+          </div>
+          <button class="stadium-close-btn" onclick="closeStadiumDRSModal()" title="Close 3D Stadium">&times;</button>
+        </div>
+      </div>
+
+      <div class="stadium-viewport-wrapper">
+        <div id="stadium-3d-canvas-container"></div>
+        <div id="stadium-loader" class="stadium-loader">
+          <div class="spinner-light"></div>
+          <p id="stadium-loader-text">Loading Narendra Modi Stadium 3D Environment...</p>
+        </div>
+
+        <!-- In-Stadium Live DRS Broadcast HUD -->
+        <div class="stadium-drs-hud">
+          <div class="hud-stat-box">
+            <span class="hud-lbl">DELIVERY SPEED</span>
+            <span id="stadium-speed-val" class="hud-val text-red">148 km/h</span>
+          </div>
+          <div class="hud-stat-box">
+            <span class="hud-lbl">PITCH LENGTH</span>
+            <span id="stadium-zone-val" class="hud-val text-gold">Good Length</span>
+          </div>
+          <div class="hud-stat-box">
+            <span class="hud-lbl">PITCH LINE</span>
+            <span id="stadium-line-val" class="hud-val text-blue">Middle Stump</span>
+          </div>
+          <div class="hud-stat-box">
+            <span class="hud-lbl">BOUNCE DISTANCE</span>
+            <span id="stadium-bounce-dist-val" class="hud-val text-white">4.2m</span>
+          </div>
+          <div class="hud-playback-controls">
+            <button id="btn-stadium-playpause" class="hud-btn-playpause" onclick="toggleStadiumPlayPause()" title="Play / Pause Delivery">
+              <span>Pause</span>
+            </button>
+            <button id="btn-stadium-replay" class="hud-btn-replay" onclick="replay3DDelivery()">
+              <span>Replay Ball</span>
+            </button>
+            <button id="btn-stadium-slowmo" class="hud-btn-slowmo" onclick="toggle3DSlowMo()">
+              <span>0.5x Slow-Mo</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Interactive Delivery Flight Scrubber Bar (Bottom Center) -->
+        <div class="stadium-flight-scrubber">
+          <div class="scrubber-left-info">
+            <div class="scrubber-badge-row">
+              <span class="scrubber-badge badge-flight" id="stadium-flight-phase">IN-FLIGHT</span>
+              <span class="scrubber-live-speed" id="stadium-live-flight-speed">-- mph</span>
+            </div>
+            <span class="scrubber-dist" id="stadium-live-flight-dist">0.0m / 20.1m</span>
+          </div>
+          <div class="scrubber-track-container">
+            <input type="range" id="stadium-scrubber-slider" min="0" max="100" step="0.5" value="0" oninput="onStadiumScrub(this.value)" aria-label="Scrub Delivery Flight" />
+            <div class="scrubber-markers">
+              <span class="marker marker-release">Release (0m)</span>
+              <span class="marker marker-bounce">Pitch Bounce (~15m)</span>
+              <span class="marker marker-stumps">Stumps (20.12m)</span>
+            </div>
+          </div>
+          <div class="scrubber-speed-pills">
+            <button type="button" class="scrubber-speed-pill" data-speed="0.25" onclick="setStadiumSpeed(0.25)">0.25x</button>
+            <button type="button" class="scrubber-speed-pill active" data-speed="0.5" onclick="setStadiumSpeed(0.5)">0.5x</button>
+            <button type="button" class="scrubber-speed-pill" data-speed="1.0" onclick="setStadiumSpeed(1.0)">1.0x</button>
+          </div>
+        </div>
+
+        <!-- TRAJECTA Watermark (Bottom Left) -->
+        <div class="stadium-watermark-bottom-left" title="TRAJECTA.ai">
+          <img src="/static/trajecta_logo_tight.png" alt="TRAJECTA.ai" class="stadium-watermark-logo-only" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       MODAL: EDIT BOWLER & SPELL PROFILE
+  ======================================================== -->
+  <div id="edit-bowler-modal" class="custom-modal-backdrop hidden" onclick="onEditBowlerBackdropClick(event)">
+    <div class="custom-modal-card edit-bowler-modal-card">
+      <div class="custom-modal-header">
+        <div class="custom-modal-title-wrap">
+          <span class="custom-modal-badge">BOWLER CONFIGURATION</span>
+          <h3>Edit Bowler &amp; Spell Profile</h3>
+          <p class="custom-modal-sub">Update bowler profile details, bowling style, and spell targets.</p>
+        </div>
+        <button type="button" class="custom-modal-close" onclick="closeEditBowlerModal()" aria-label="Close dialog">&times;</button>
+      </div>
+
+      <form id="edit-bowler-form" class="custom-modal-body" onsubmit="event.preventDefault(); submitEditBowlerProfile();">
+        <!-- Bowler Avatar Upload Row -->
+        <div class="edit-avatar-upload-row">
+          <div class="edit-avatar-preview-wrap">
+            <div class="edit-avatar-circle" id="edit-avatar-preview">
+              <span id="edit-avatar-initials">SA</span>
+              <img id="edit-avatar-img" class="edit-avatar-img hidden" src="" alt="Bowler Preview" />
+            </div>
+            <button type="button" class="btn-avatar-camera" onclick="document.getElementById('edit-avatar-file-input').click()" title="Choose Profile Photo" aria-label="Upload photo">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                <circle cx="12" cy="13" r="4"></circle>
+              </svg>
+            </button>
+          </div>
+          <div class="edit-avatar-controls">
+            <span class="edit-avatar-label">BOWLER PROFILE PHOTO</span>
+            <div class="edit-avatar-btn-group">
+              <button type="button" class="btn-avatar-upload" onclick="document.getElementById('edit-avatar-file-input').click()">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                <span>Upload Photo</span>
+              </button>
+              <button type="button" class="btn-avatar-remove hidden" id="btn-avatar-remove" onclick="removeBowlerAvatar()">
+                <span>Remove</span>
+              </button>
+            </div>
+            <span class="edit-avatar-hint">JPG, PNG, WEBP or GIF (Square format recommended)</span>
+            <input type="file" id="edit-avatar-file-input" accept="image/*" class="hidden" onchange="onBowlerAvatarFileSelected(event)" />
+            <input type="hidden" id="edit-avatar-url-val" value="" />
+          </div>
+        </div>
+
+        <div class="form-group-modal">
+          <label for="edit-bowler-name">Bowler Name</label>
+          <input type="text" id="edit-bowler-name" class="modal-input" placeholder="e.g. Jasprit Bumrah" required />
+        </div>
+
+        <div class="form-group-modal">
+          <label for="edit-bowling-style">Bowling Style</label>
+          <select id="edit-bowling-style" class="modal-input modal-select">
+            <option value="Right-arm Fast">Right-arm Fast</option>
+            <option value="Left-arm Fast">Left-arm Fast</option>
+            <option value="Right-arm Medium">Right-arm Medium</option>
+            <option value="Left-arm Medium">Left-arm Medium</option>
+            <option value="Right-arm Off-Spin">Right-arm Off-Spin</option>
+            <option value="Left-arm Orthodox">Left-arm Orthodox</option>
+            <option value="Right-arm Leg-Spin">Right-arm Leg-Spin</option>
+            <option value="Left-arm Wrist Spin">Left-arm Wrist Spin</option>
+          </select>
+        </div>
+
+        <div class="form-group-modal">
+          <label for="edit-session-name">Spell / Session Title</label>
+          <input type="text" id="edit-session-name" class="modal-input" placeholder="e.g. Spell - Good Length Channel" required />
+        </div>
+
+        <div class="form-group-modal">
+          <label>Target Deliveries in Spell</label>
+          <div class="modal-target-pills">
+            <button type="button" class="edit-target-pill" data-edit-balls="3" onclick="setEditTargetBalls(3)">3 Deliveries</button>
+            <button type="button" class="edit-target-pill" data-edit-balls="5" onclick="setEditTargetBalls(5)">5 Deliveries</button>
+            <button type="button" class="edit-target-pill" data-edit-balls="6" onclick="setEditTargetBalls(6)">6 Deliveries (Over)</button>
+            <button type="button" class="edit-target-pill" data-edit-balls="8" onclick="setEditTargetBalls(8)">8 Deliveries</button>
+            <button type="button" class="edit-target-pill" data-edit-balls="10" onclick="setEditTargetBalls(10)">10 Deliveries</button>
+          </div>
+          <input type="hidden" id="edit-target-balls-val" value="5" />
+        </div>
+
+        <div class="modal-footer-actions">
+          <button type="button" class="btn-modal-cancel" onclick="closeEditBowlerModal()">Cancel</button>
+          <button type="submit" class="btn-modal-save" id="btn-save-bowler">
+            <span>Save Profile</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/static/app.js?v=3.5"></script>
+</body>
+</html>
