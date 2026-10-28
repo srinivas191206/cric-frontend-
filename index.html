@@ -534,6 +534,33 @@
             <input type="hidden" id="hero-target-balls-val" value="5" />
           </div>
 
+          <div class="form-item">
+            <label>Physical Pitch Wickets Setup</label>
+            <div class="wickets-choice-grid">
+              <div class="wicket-choice-card active" id="hero-wicket-choice-present" onclick="setHeroWicketsChoice(true)">
+                <div class="choice-radio-circle"></div>
+                <div class="choice-info">
+                  <div class="choice-title">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="4" width="2" height="16" rx="1"/><rect x="11" y="4" width="2" height="16" rx="1"/><rect x="17" y="4" width="2" height="16" rx="1"/><rect x="3" y="2" width="18" height="2" rx="1"/></svg>
+                    <span>Physical Wickets Present</span>
+                  </div>
+                  <p class="choice-desc">Video contains physical stumps. AI automatically detects wickets on the pitch.</p>
+                </div>
+              </div>
+              <div class="wicket-choice-card" id="hero-wicket-choice-none" onclick="setHeroWicketsChoice(false)">
+                <div class="choice-radio-circle"></div>
+                <div class="choice-info">
+                  <div class="choice-title">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 14h-2v-2h2zm0-4h-2V7h2z"/></svg>
+                    <span>No Wickets (Manual Batsman Stumps)</span>
+                  </div>
+                  <p class="choice-desc">No stumps in video. On video upload at frame 0/1, adjust the batsman wicket to calibrate pitch &amp; apply to all videos.</p>
+                </div>
+              </div>
+            </div>
+            <input type="hidden" id="hero-has-wickets-val" value="true" />
+          </div>
+
           <div class="hero-action-row">
             <button type="submit" class="btn-start-spell">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
@@ -573,6 +600,7 @@
             <div class="meta-row-1">
               <h3 id="session-display-bowler">Jasprit Bumrah</h3>
               <span id="session-display-style" class="badge-tag-style">Right-arm Fast</span>
+              <span id="session-display-wickets" class="badge-tag-style badge-wicket-style">Physical Wickets</span>
               <button type="button" class="btn-bowler-edit-inline" onclick="openEditBowlerModal(event)" title="Edit Bowler &amp; Spell Details">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -665,6 +693,40 @@
               <video id="trim-preview-video" playsinline muted preload="auto"></video>
               <div class="trim-time-badge" id="trim-playhead-time">00:00.0 / 00:00.0</div>
               <button type="button" class="btn-trim-play" id="trim-play-btn" onclick="toggleTrimVideoPlay()">Play</button>
+
+              <!-- Manual Wicket Calibration Overlay -->
+              <div id="manual-wicket-overlay" class="manual-wicket-overlay hidden" onpointerdown="onWicketOverlayPointerDown(event)">
+                <!-- Projected Pitch Guide Lines -->
+                <svg id="wicket-pitch-guide" class="wicket-pitch-guide" preserveAspectRatio="none">
+                  <polygon id="guide-pitch-poly" class="guide-pitch-poly" points="0,0 0,0 0,0 0,0" />
+                  <line id="guide-pitch-center" class="guide-pitch-center" x1="0" y1="0" x2="0" y2="0" />
+                  <line id="guide-pitch-crease" class="guide-pitch-crease" x1="0" y1="0" x2="0" y2="0" />
+                  <line id="guide-popping-crease" class="guide-popping-crease" x1="0" y1="0" x2="0" y2="0" />
+                </svg>
+
+                <!-- Interactive Draggable Wicket Marker -->
+                <div id="wicket-marker" class="wicket-marker" onpointerdown="onWicketMarkerPointerDown(event)">
+                  <div class="wicket-marker-badge">
+                    <span class="marker-dot"></span>
+                    <span class="marker-lbl">BATSMAN WICKETS</span>
+                  </div>
+                  <div class="wicket-stumps-graphic">
+                    <svg width="42" height="68" viewBox="0 0 42 68">
+                      <!-- Bails -->
+                      <rect x="3" y="3" width="16" height="3" rx="1.5" fill="#ffd13b" stroke="#111" stroke-width="0.7"/>
+                      <rect x="23" y="3" width="16" height="3" rx="1.5" fill="#ffd13b" stroke="#111" stroke-width="0.7"/>
+                      <!-- Off, Middle, Leg Stumps -->
+                      <rect x="5" y="6" width="6" height="58" rx="2" fill="#151515" stroke="#00eb78" stroke-width="1.2"/>
+                      <rect x="18" y="6" width="6" height="58" rx="2" fill="#151515" stroke="#00eb78" stroke-width="1.2"/>
+                      <rect x="31" y="6" width="6" height="58" rx="2" fill="#151515" stroke="#00eb78" stroke-width="1.2"/>
+                      <!-- Ground Base Crosshair -->
+                      <circle cx="21" cy="64" r="4.5" fill="#00eb78" stroke="#ffffff" stroke-width="1.5"/>
+                      <line x1="9" y1="64" x2="33" y2="64" stroke="#00eb78" stroke-width="2"/>
+                    </svg>
+                  </div>
+                  <span class="marker-sub">Drag / Click to Position</span>
+                </div>
+              </div>
             </div>
 
             <!-- Scrubber Track -->
@@ -694,6 +756,76 @@
                   <input type="number" id="trim-end-num" min="0" step="0.1" value="0.0" class="num-input" onchange="syncTrimFromNumberInputs()">
                   <span class="unit-lbl">s</span>
                   <button type="button" class="btn-set-cur" onclick="setTrimEndToCurrentTime()">Set</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- WICKET CALIBRATION & PERSPECTIVE (Active when session has no physical wickets) -->
+            <div id="wicket-calib-card" class="wicket-calib-card hidden">
+              <div class="wicket-calib-header">
+                <div class="wicket-calib-title-wrap">
+                  <span class="wicket-calib-badge">NO WICKETS SESSION &middot; BATSMAN CALIBRATION</span>
+                  <h5 id="wicket-calib-heading">Batsman End Wicket Setup</h5>
+                  <p class="wicket-calib-guide-text">Position the batsman stumps on frame 0/1 of the video to calibrate pitch geometry &amp; 3D ball trajectory.</p>
+                </div>
+              </div>
+
+              <!-- Locked session calibration notification banner (revealed when previous video calibrated) -->
+              <div id="locked-session-calib-banner" class="locked-calib-banner hidden">
+                <div class="locked-banner-icon">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00eb78" stroke-width="2.2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                </div>
+                <div class="locked-banner-text">
+                  <span class="locked-title">Batsman Wicket Locked from Delivery 1</span>
+                  <span class="locked-sub">Applied to all videos in this spell. Using fixed pitch coordinates.</span>
+                </div>
+                <div class="locked-banner-actions">
+                  <button type="button" class="btn-locked-action" onclick="editLockedCalibration()">Adjust Wicket</button>
+                  <button type="button" class="btn-locked-action text-danger" onclick="clearLockedCalibration()">Reset</button>
+                </div>
+              </div>
+
+              <!-- Manual Positioning Controls -->
+              <div id="manual-calib-panel" class="manual-calib-panel">
+                <p class="manual-hint">Click or drag the green batsman stumps directly on the video frame above to position.</p>
+
+                <div class="manual-controls-row">
+                  <div class="manual-pos-nudge-group">
+                    <span class="ctrl-sublabel">Fine-tune Position:</span>
+                    <div class="nudge-btn-grid">
+                      <button type="button" class="btn-nudge" onclick="nudgeWicket(0, -2)" title="Nudge Up">&uarr;</button>
+                      <button type="button" class="btn-nudge" onclick="nudgeWicket(-2, 0)" title="Nudge Left">&larr;</button>
+                      <button type="button" class="btn-nudge center-btn" onclick="resetWicketToDefault()" title="Center Pitch">&bull;</button>
+                      <button type="button" class="btn-nudge" onclick="nudgeWicket(2, 0)" title="Nudge Right">&rarr;</button>
+                      <button type="button" class="btn-nudge" onclick="nudgeWicket(0, 2)" title="Nudge Down">&darr;</button>
+                    </div>
+                  </div>
+
+                  <div class="manual-scale-group">
+                    <span class="ctrl-sublabel">Wicket Scale:</span>
+                    <div class="scale-btn-group">
+                      <button type="button" class="btn-scale" onclick="scaleWicket(-0.1)" title="Smaller">-</button>
+                      <span id="wicket-scale-val" class="scale-readout">1.0x</span>
+                      <button type="button" class="btn-scale" onclick="scaleWicket(0.1)" title="Larger">+</button>
+                    </div>
+                  </div>
+
+                  <div class="manual-readout">
+                    <span class="ctrl-sublabel">Base Contact:</span>
+                    <span id="wicket-coords-readout" class="coords-val">X: 50.0% &middot; Y: 46.5%</span>
+                  </div>
+                </div>
+
+                <!-- Apply to all videos checkbox -->
+                <div class="apply-to-all-row">
+                  <label class="custom-checkbox-wrap">
+                    <input type="checkbox" id="chk-apply-to-all" checked>
+                    <span class="checkbox-box"></span>
+                    <span class="checkbox-text">
+                      <strong>Apply batsman wicket to all videos in this spell / session</strong>
+                      <span class="checkbox-sub">Automatically position wickets in subsequent videos (Delivery 2, 3, etc.)</span>
+                    </span>
+                  </label>
                 </div>
               </div>
             </div>

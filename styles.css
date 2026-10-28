@@ -1775,6 +1775,119 @@ body.dark-theme .theme-toggle-thumb {
   font-weight: 700;
 }
 
+.wickets-choice-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.wicket-choice-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--bg-card-subtle);
+  border: 1.5px solid var(--border-light);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  text-align: left;
+}
+
+.wicket-choice-card:hover {
+  border-color: rgba(0, 235, 120, 0.4);
+  background: rgba(0, 235, 120, 0.03);
+}
+
+.wicket-choice-card.active {
+  border-color: #00eb78;
+  background: rgba(0, 235, 120, 0.08);
+  box-shadow: 0 0 16px rgba(0, 235, 120, 0.12);
+}
+
+.choice-radio-circle {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--border-medium);
+  margin-top: 2px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.wicket-choice-card.active .choice-radio-circle {
+  border-color: #00eb78;
+  background: #00eb78;
+}
+
+.choice-radio-circle::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #0d1117;
+  display: none;
+}
+
+.wicket-choice-card.active .choice-radio-circle::after {
+  display: block;
+}
+
+.choice-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.choice-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.wicket-choice-card.active .choice-title {
+  color: #00eb78;
+}
+
+.choice-desc {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.badge-wicket-style {
+  background: rgba(0, 235, 120, 0.12);
+  color: #00eb78;
+  border: 1px solid rgba(0, 235, 120, 0.25);
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.badge-wicket-style.manual {
+  background: rgba(255, 171, 0, 0.12);
+  color: #ffab00;
+  border: 1px solid rgba(255, 171, 0, 0.25);
+}
+
+.wicket-calib-guide-text {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin: 4px 0 0 0;
+  line-height: 1.4;
+}
+
 .hero-action-row {
   margin-top: 10px;
 }
@@ -6494,4 +6607,506 @@ body.dark-theme .btn-avatar-upload {
   border-color: #313747 !important;
   color: #FFFFFF !important;
 }
+
+/* ============================================================================
+   MANUAL WICKET POSITIONING OVERLAY & PITCH CALIBRATION CONTROLS
+   ============================================================================ */
+
+.manual-wicket-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: auto;
+  cursor: crosshair;
+  z-index: 15;
+  touch-action: none;
+}
+
+.wicket-pitch-guide {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.guide-pitch-poly {
+  fill: rgba(30, 64, 175, 0.12);
+  stroke: rgba(59, 130, 246, 0.45);
+  stroke-width: 1.5;
+  stroke-dasharray: 4, 3;
+}
+
+.guide-pitch-center {
+  stroke: rgba(0, 235, 120, 0.65);
+  stroke-width: 1.5;
+  stroke-dasharray: 6, 4;
+}
+
+.guide-pitch-crease,
+.guide-popping-crease {
+  stroke: rgba(255, 255, 255, 0.85);
+  stroke-width: 2;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.7));
+}
+
+.wicket-marker {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  z-index: 20;
+  transition: filter 0.15s ease;
+}
+
+.wicket-marker:active {
+  cursor: grabbing;
+}
+
+.wicket-marker-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(15, 23, 42, 0.90);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 235, 120, 0.5);
+  padding: 2px 7px;
+  border-radius: 12px;
+  margin-bottom: 2px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.marker-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #00eb78;
+  animation: pulse-green 1.5s infinite;
+}
+
+.marker-lbl {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #00eb78;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.wicket-stumps-graphic {
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.6));
+}
+
+.wicket-stumps-graphic svg {
+  display: block;
+}
+
+.marker-sub {
+  font-family: var(--font-sans);
+  font-size: 0.60rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  background: rgba(15, 23, 42, 0.75);
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-top: 1px;
+  white-space: nowrap;
+}
+
+/* Wicket Calibration Card */
+.wicket-calib-card {
+  background: var(--bg-hover);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.wicket-calib-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.wicket-calib-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wicket-calib-badge {
+  font-family: var(--font-mono);
+  font-size: 0.60rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.wicket-calib-title-wrap h5 {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.wicket-mode-pills {
+  display: flex;
+  align-items: center;
+  background: rgba(15, 23, 42, 0.06);
+  border: 1px solid var(--border-light);
+  border-radius: 20px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.w-mode-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: none;
+  border-radius: 16px;
+  padding: 5px 10px;
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.w-mode-pill:hover {
+  color: var(--text-main);
+}
+
+.w-mode-pill.active {
+  background: var(--primary);
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(5, 150, 105, 0.3);
+}
+
+/* Locked session banner */
+.locked-calib-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(0, 235, 120, 0.08);
+  border: 1px solid rgba(0, 235, 120, 0.3);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  gap: 8px;
+}
+
+.locked-banner-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(0, 235, 120, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.locked-banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex-grow: 1;
+}
+
+.locked-title {
+  font-family: var(--font-sans);
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #059669;
+}
+
+.locked-sub {
+  font-family: var(--font-sans);
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+.locked-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.btn-locked-action {
+  background: #ffffff;
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-family: var(--font-sans);
+  font-size: 0.70rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-locked-action:hover {
+  background: var(--bg-hover);
+  color: var(--text-main);
+}
+
+.btn-locked-action.text-danger {
+  color: #dc2626;
+}
+
+.btn-locked-action.text-danger:hover {
+  background: #fef2f2;
+}
+
+/* Manual controls panel */
+.manual-calib-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--border-light);
+}
+
+.manual-hint {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  line-height: 1.35;
+}
+
+.manual-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ctrl-sublabel {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  display: block;
+  margin-bottom: 3px;
+}
+
+.nudge-btn-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 26px);
+  gap: 3px;
+}
+
+.btn-nudge {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  font-size: 0.72rem;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-nudge:hover {
+  background: var(--bg-hover);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.btn-nudge.center-btn {
+  font-weight: 800;
+  color: var(--primary);
+}
+
+.scale-btn-group {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: 2px 4px;
+  gap: 6px;
+}
+
+.btn-scale {
+  width: 22px;
+  height: 22px;
+  background: var(--bg-hover);
+  border: none;
+  border-radius: 3px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-main);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-scale:hover {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.scale-readout {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  min-width: 32px;
+  text-align: center;
+  color: var(--text-main);
+}
+
+.manual-readout .coords-val {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--primary);
+  background: rgba(5, 150, 105, 0.08);
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(5, 150, 105, 0.2);
+  display: inline-block;
+}
+
+/* Custom Checkbox */
+.apply-to-all-row {
+  background: #ffffff;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+}
+
+.custom-checkbox-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.custom-checkbox-wrap input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.checkbox-box {
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--border-light);
+  border-radius: 4px;
+  background: #ffffff;
+  margin-top: 2px;
+  flex-shrink: 0;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.custom-checkbox-wrap input:checked ~ .checkbox-box {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.custom-checkbox-wrap input:checked ~ .checkbox-box::after {
+  content: "";
+  position: absolute;
+  left: 4.5px;
+  top: 1.5px;
+  width: 4px;
+  height: 8px;
+  border: solid #ffffff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.checkbox-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.checkbox-text strong {
+  font-size: 0.76rem;
+  color: var(--text-main);
+}
+
+.checkbox-sub {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+/* Dark Theme Overrides */
+body.dark-theme .wicket-calib-card {
+  background: #171A23 !important;
+  border-color: #272C3A !important;
+}
+
+body.dark-theme .wicket-mode-pills {
+  background: rgba(0, 0, 0, 0.4) !important;
+  border-color: #2E3445 !important;
+}
+
+body.dark-theme .w-mode-pill {
+  color: #94A3B8 !important;
+}
+
+body.dark-theme .w-mode-pill.active {
+  background: #059669 !important;
+  color: #FFFFFF !important;
+}
+
+body.dark-theme .btn-nudge,
+body.dark-theme .scale-btn-group,
+body.dark-theme .btn-locked-action,
+body.dark-theme .apply-to-all-row {
+  background: #1C202C !important;
+  border-color: #2B3142 !important;
+  color: #F8FAFC !important;
+}
+
+body.dark-theme .locked-title {
+  color: #00eb78 !important;
+}
+
+body.dark-theme .locked-calib-banner {
+  background: rgba(0, 235, 120, 0.08) !important;
+  border-color: rgba(0, 235, 120, 0.25) !important;
+}
+
+body.dark-theme .manual-readout .coords-val {
+  background: rgba(0, 235, 120, 0.12) !important;
+  border-color: rgba(0, 235, 120, 0.3) !important;
+  color: #00eb78 !important;
+}
+
+body.dark-theme .btn-scale {
+  background: #252A3A !important;
+  color: #F8FAFC !important;
+}
+
+body.dark-theme .checkbox-box {
+  background: #1C202C !important;
+  border-color: #2E3547 !important;
+}
+
 

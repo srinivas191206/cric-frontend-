@@ -1015,6 +1015,7 @@ function showNewSessionScreen() {
     sessionNameInput.value = `Spell - Good Length Channel (${today})`;
   }
 
+  setHeroWicketsChoice(true);
   loadSavedSessionsList();
 }
 
@@ -1073,6 +1074,20 @@ function setHeroTargetBalls(n) {
 }
 
 /**
+ * Set Hero Wickets Choice (true = physical present, false = no wickets / manual batsman)
+ */
+function setHeroWicketsChoice(hasWickets) {
+  const input = document.getElementById('hero-has-wickets-val');
+  if (input) input.value = hasWickets ? 'true' : 'false';
+
+  const cardPresent = document.getElementById('hero-wicket-choice-present');
+  const cardNone = document.getElementById('hero-wicket-choice-none');
+
+  if (cardPresent) cardPresent.classList.toggle('active', hasWickets);
+  if (cardNone) cardNone.classList.toggle('active', !hasWickets);
+}
+
+/**
  * Submit Create Session Form from Hero Screen
  */
 async function submitCreateSessionFromHero() {
@@ -1080,6 +1095,7 @@ async function submitCreateSessionFromHero() {
   const bowlingStyle = document.getElementById('hero-bowling-style')?.value || 'Right-arm Fast';
   const sessionName = document.getElementById('hero-session-name')?.value.trim();
   const targetBalls = parseInt(document.getElementById('hero-target-balls-val')?.value || '5', 10);
+  const hasWickets = document.getElementById('hero-has-wickets-val')?.value !== 'false';
 
   if (!bowlerName || !sessionName) {
     alert("Please enter both Bowler Name and Spell Title.");
@@ -1094,7 +1110,8 @@ async function submitCreateSessionFromHero() {
         name: sessionName,
         bowler_name: bowlerName,
         bowling_type: bowlingStyle,
-        target_balls: targetBalls
+        target_balls: targetBalls,
+        has_wickets: hasWickets
       })
     });
 
@@ -1203,6 +1220,13 @@ function updateSessionUI() {
   if (bowlerNameEl) bowlerNameEl.innerText = currentSession.bowler_name || "Bowler";
   if (bowlerStyleEl) bowlerStyleEl.innerText = currentSession.bowling_type || "Right-arm Fast";
   if (sessionTitleEl) sessionTitleEl.innerText = currentSession.name || "Training Spell";
+
+  const wicketSetupEl = document.getElementById('session-display-wickets');
+  if (wicketSetupEl) {
+    const hasWickets = currentSession.has_wickets !== false;
+    wicketSetupEl.innerText = hasWickets ? 'Physical Wickets' : 'No Wickets · Batsman Calibration';
+    wicketSetupEl.classList.toggle('manual', !hasWickets);
+  }
 
   // Initials & Profile Photos
   const parts = (currentSession.bowler_name || "Bowler").trim().split(/\s+/);
@@ -1345,6 +1369,9 @@ function updateSessionUI() {
   if (typeof updateCommandCenterLiveInsights === 'function') {
     updateCommandCenterLiveInsights(currentSession, dels);
   }
+
+  // Synchronize locked session wicket calibration
+  updateLockedCalibrationUI();
 }
 
 /**
@@ -1631,6 +1658,10 @@ function initVideoTrim(file) {
 
     updateTimelineHighlight();
     updateTrimDurationBadge();
+    updateLockedCalibrationUI();
+    if (currentWicketMode === 'manual') {
+      setTimeout(updateWicketMarkerUI, 100);
+    }
     trimVideo.currentTime = 0;
   };
 }
@@ -1749,6 +1780,224 @@ function playTrimPreview() {
 }
 
 // ============================================================================
+// 2B. BATSMAN WICKET CALIBRATION & SESSION CALIBRATION CONTROLLER
+// ============================================================================
+
+let manualWicketState = {
+  x_pct: 0.50,
+  y_pct: 0.465,
+  scale: 1.0,
+  w_pct: 0.022,
+  h_pct: 0.055,
+  isDragging: false
+};
+let sessionLockedCalib = null;
+let isManuallyAdjustingLocked = false;
+
+function updateWicketMarkerUI() {
+  const marker = document.getElementById('wicket-marker');
+  const coordsEl = document.getElementById('wicket-coords-readout');
+  const scaleEl = document.getElementById('wicket-scale-val');
+  const guidePoly = document.getElementById('guide-pitch-poly');
+  const guideCenter = document.getElementById('guide-pitch-center');
+  const guideCrease = document.getElementById('guide-pitch-crease');
+  const guidePopping = document.getElementById('guide-popping-crease');
+  const overlay = document.getElementById('manual-wicket-overlay');
+
+  if (!marker || !overlay) return;
+
+  const rect = overlay.getBoundingClientRect();
+  const w = rect.width || 480;
+  const h = rect.height || 270;
+
+  const xPx = manualWicketState.x_pct * w;
+  const yPx = manualWicketState.y_pct * h;
+
+  marker.style.left = `${manualWicketState.x_pct * 100}%`;
+  marker.style.top = `${manualWicketState.y_pct * 100}%`;
+  marker.style.transform = `translate(-50%, -100%) scale(${manualWicketState.scale})`;
+
+  if (coordsEl) {
+    coordsEl.innerText = `X: ${(manualWicketState.x_pct * 100).toFixed(1)}% · Y: ${(manualWicketState.y_pct * 100).toFixed(1)}%`;
+  }
+  if (scaleEl) {
+    scaleEl.innerText = `${manualWicketState.scale.toFixed(1)}x`;
+  }
+
+  // Draw Projected Pitch Guide in SVG
+  const farHalfW = (w * 0.06) * manualWicketState.scale;
+  const nearHalfW = farHalfW * 3.4;
+  const poppingY = yPx + Math.min(h - yPx, (h - yPx) * 0.12);
+
+  if (guidePoly) {
+    const pts = [
+      `${xPx - farHalfW},${yPx}`,
+      `${xPx + farHalfW},${yPx}`,
+      `${xPx + nearHalfW},${h}`,
+      `${xPx - nearHalfW},${h}`
+    ].join(' ');
+    guidePoly.setAttribute('points', pts);
+  }
+
+  if (guideCenter) {
+    guideCenter.setAttribute('x1', xPx);
+    guideCenter.setAttribute('y1', yPx);
+    guideCenter.setAttribute('x2', xPx);
+    guideCenter.setAttribute('y2', h);
+  }
+
+  if (guideCrease) {
+    guideCrease.setAttribute('x1', xPx - farHalfW * 1.5);
+    guideCrease.setAttribute('y1', yPx);
+    guideCrease.setAttribute('x2', xPx + farHalfW * 1.5);
+    guideCrease.setAttribute('y2', yPx);
+  }
+
+  if (guidePopping) {
+    const popHalfW = farHalfW + (nearHalfW - farHalfW) * 0.12;
+    guidePopping.setAttribute('x1', xPx - popHalfW * 1.8);
+    guidePopping.setAttribute('y1', poppingY);
+    guidePopping.setAttribute('x2', xPx + popHalfW * 1.8);
+    guidePopping.setAttribute('y2', poppingY);
+  }
+}
+
+function onWicketMarkerPointerDown(e) {
+  e.stopPropagation();
+  manualWicketState.isDragging = true;
+  document.addEventListener('pointermove', onWicketPointerMove);
+  document.addEventListener('pointerup', onWicketPointerUp);
+}
+
+function onWicketOverlayPointerDown(e) {
+  const overlay = document.getElementById('manual-wicket-overlay');
+  if (!overlay) return;
+  const rect = overlay.getBoundingClientRect();
+  const xPct = Math.max(0.1, Math.min(0.9, (e.clientX - rect.left) / rect.width));
+  const yPct = Math.max(0.2, Math.min(0.85, (e.clientY - rect.top) / rect.height));
+  manualWicketState.x_pct = xPct;
+  manualWicketState.y_pct = yPct;
+  updateWicketMarkerUI();
+
+  manualWicketState.isDragging = true;
+  document.addEventListener('pointermove', onWicketPointerMove);
+  document.addEventListener('pointerup', onWicketPointerUp);
+}
+
+function onWicketPointerMove(e) {
+  if (!manualWicketState.isDragging) return;
+  const overlay = document.getElementById('manual-wicket-overlay');
+  if (!overlay) return;
+  const rect = overlay.getBoundingClientRect();
+  const xPct = Math.max(0.05, Math.min(0.95, (e.clientX - rect.left) / rect.width));
+  const yPct = Math.max(0.15, Math.min(0.90, (e.clientY - rect.top) / rect.height));
+  manualWicketState.x_pct = xPct;
+  manualWicketState.y_pct = yPct;
+  updateWicketMarkerUI();
+}
+
+function onWicketPointerUp() {
+  manualWicketState.isDragging = false;
+  document.removeEventListener('pointermove', onWicketPointerMove);
+  document.removeEventListener('pointerup', onWicketPointerUp);
+}
+
+function nudgeWicket(dx, dy) {
+  manualWicketState.x_pct = Math.max(0.05, Math.min(0.95, manualWicketState.x_pct + dx * 0.005));
+  manualWicketState.y_pct = Math.max(0.10, Math.min(0.90, manualWicketState.y_pct + dy * 0.005));
+  updateWicketMarkerUI();
+}
+
+function scaleWicket(dScale) {
+  manualWicketState.scale = Math.max(0.5, Math.min(2.5, manualWicketState.scale + dScale));
+  updateWicketMarkerUI();
+}
+
+function resetWicketToDefault() {
+  manualWicketState.x_pct = 0.50;
+  manualWicketState.y_pct = 0.465;
+  manualWicketState.scale = 1.0;
+  updateWicketMarkerUI();
+}
+
+function updateLockedCalibrationUI() {
+  const banner = document.getElementById('locked-session-calib-banner');
+  const manualPanel = document.getElementById('manual-calib-panel');
+  const calibCard = document.getElementById('wicket-calib-card');
+  const overlay = document.getElementById('manual-wicket-overlay');
+
+  const isNoWicketsSession = currentSession && currentSession.has_wickets === false;
+
+  if (!isNoWicketsSession) {
+    if (calibCard) calibCard.classList.add('hidden');
+    if (overlay) overlay.classList.add('hidden');
+    if (banner) banner.classList.add('hidden');
+    return;
+  }
+
+  // Session has no physical wickets -> reveal batsman wicket setup & overlay
+  if (calibCard) calibCard.classList.remove('hidden');
+  if (overlay) overlay.classList.remove('hidden');
+
+  if (currentSession && currentSession.session_calibration && currentSession.session_calibration.locked_calib) {
+    sessionLockedCalib = currentSession.session_calibration;
+
+    // Load saved coordinates into manualWicketState
+    const manualMeta = sessionLockedCalib.manual_stumps || (sessionLockedCalib.locked_calib && sessionLockedCalib.locked_calib.manual_meta);
+    if (manualMeta) {
+      try {
+        const meta = typeof manualMeta === 'string' ? JSON.parse(manualMeta) : manualMeta;
+        if (meta.x_pct !== undefined) manualWicketState.x_pct = meta.x_pct;
+        if (meta.y_pct !== undefined) manualWicketState.y_pct = meta.y_pct;
+        if (meta.scale !== undefined) manualWicketState.scale = meta.scale;
+      } catch (e) {
+        console.warn("Could not parse saved manual stump meta:", e);
+      }
+    }
+
+    if (!isManuallyAdjustingLocked) {
+      if (banner) banner.classList.remove('hidden');
+      if (manualPanel) manualPanel.classList.add('hidden');
+    } else {
+      if (banner) banner.classList.add('hidden');
+      if (manualPanel) manualPanel.classList.remove('hidden');
+    }
+  } else {
+    sessionLockedCalib = null;
+    isManuallyAdjustingLocked = false;
+    if (banner) banner.classList.add('hidden');
+    if (manualPanel) manualPanel.classList.remove('hidden');
+  }
+
+  updateWicketMarkerUI();
+}
+
+function editLockedCalibration() {
+  isManuallyAdjustingLocked = true;
+  const banner = document.getElementById('locked-session-calib-banner');
+  const manualPanel = document.getElementById('manual-calib-panel');
+  if (banner) banner.classList.add('hidden');
+  if (manualPanel) manualPanel.classList.remove('hidden');
+  updateWicketMarkerUI();
+}
+
+async function clearLockedCalibration() {
+  if (!currentSessionId) return;
+  try {
+    const res = await fetch(`/api/sessions/${currentSessionId}/calibration`, { method: 'DELETE' });
+    if (res.ok) {
+      if (currentSession) delete currentSession.session_calibration;
+      sessionLockedCalib = null;
+      isManuallyAdjustingLocked = false;
+      resetWicketToDefault();
+      updateLockedCalibrationUI();
+    }
+  } catch (e) {
+    console.error("Failed to clear locked calibration:", e);
+  }
+}
+
+// ============================================================================
 // 3. RUN INFERENCE & UNIFIED BALL TRACKING
 // ============================================================================
 
@@ -1783,6 +2032,32 @@ async function runDetection() {
   formData.append('ball_render_mode', 'both');
   formData.append('trail_length', 25);
   formData.append('show_trail', true);
+
+  const isNoWicketsSession = currentSession && currentSession.has_wickets === false;
+  const chkApply = document.getElementById('chk-apply-to-all');
+  const applyToAll = chkApply ? chkApply.checked : true;
+
+  if (isNoWicketsSession) {
+    formData.append('no_wicket_mode', true);
+    if (!sessionLockedCalib || isManuallyAdjustingLocked) {
+      formData.append('manual_stump_data', JSON.stringify({
+        x_pct: manualWicketState.x_pct,
+        y_pct: manualWicketState.y_pct,
+        scale: manualWicketState.scale,
+        w_pct: manualWicketState.w_pct,
+        h_pct: manualWicketState.h_pct
+      }));
+      formData.append('apply_to_all_videos', applyToAll);
+      formData.append('use_session_calibration', false);
+    } else {
+      formData.append('use_session_calibration', true);
+      formData.append('apply_to_all_videos', true);
+    }
+  } else {
+    formData.append('no_wicket_mode', false);
+    formData.append('use_session_calibration', true);
+    formData.append('apply_to_all_videos', applyToAll);
+  }
 
   if (trimState.duration > 0 && trimState.endTime > trimState.startTime) {
     formData.append('start_time', trimState.startTime);
