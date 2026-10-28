@@ -844,6 +844,11 @@ function openEditBowlerModal(event) {
   if (sessionNameInput) sessionNameInput.value = curr.name || '';
   setEditTargetBalls(curr.target_balls || 5);
 
+  const editWicketsSelect = document.getElementById('edit-pitch-wickets');
+  if (editWicketsSelect) {
+    editWicketsSelect.value = (curr.has_wickets !== false) ? 'true' : 'false';
+  }
+
   if (curr.avatar_url) {
     if (avatarImg) {
       avatarImg.src = curr.avatar_url;
@@ -934,6 +939,8 @@ async function submitEditBowlerProfile() {
       finalAvatarUrl = document.getElementById('edit-avatar-url-val').value;
     }
 
+    const editHasWickets = document.getElementById('edit-pitch-wickets')?.value !== 'false';
+
     if (currentSessionId) {
       const res = await fetch(`/api/sessions/${currentSessionId}`, {
         method: 'PATCH',
@@ -943,7 +950,8 @@ async function submitEditBowlerProfile() {
           bowling_type: bowlingStyle,
           name: sessionName,
           target_balls: targetBalls,
-          avatar_url: finalAvatarUrl
+          avatar_url: finalAvatarUrl,
+          has_wickets: editHasWickets
         })
       });
 
@@ -957,6 +965,7 @@ async function submitEditBowlerProfile() {
           currentSession.name = sessionName;
           currentSession.target_balls = targetBalls;
           currentSession.avatar_url = finalAvatarUrl;
+          currentSession.has_wickets = editHasWickets;
         }
       }
     } else if (currentSession) {
@@ -965,6 +974,7 @@ async function submitEditBowlerProfile() {
       currentSession.name = sessionName;
       currentSession.target_balls = targetBalls;
       currentSession.avatar_url = finalAvatarUrl;
+      currentSession.has_wickets = editHasWickets;
     }
 
     // Refresh all UI elements
@@ -1015,7 +1025,11 @@ function showNewSessionScreen() {
     sessionNameInput.value = `Spell - Good Length Channel (${today})`;
   }
 
-  setHeroWicketsChoice(true);
+  const wicketsSelect = document.getElementById('hero-pitch-wickets');
+  if (wicketsSelect) {
+    wicketsSelect.value = 'true';
+    onHeroWicketsSelectChange('true');
+  }
   loadSavedSessionsList();
 }
 
@@ -1074,17 +1088,18 @@ function setHeroTargetBalls(n) {
 }
 
 /**
- * Set Hero Wickets Choice (true = physical present, false = no wickets / manual batsman)
+ * Handle Hero Wickets Select Dropdown Change
  */
-function setHeroWicketsChoice(hasWickets) {
-  const input = document.getElementById('hero-has-wickets-val');
-  if (input) input.value = hasWickets ? 'true' : 'false';
-
-  const cardPresent = document.getElementById('hero-wicket-choice-present');
-  const cardNone = document.getElementById('hero-wicket-choice-none');
-
-  if (cardPresent) cardPresent.classList.toggle('active', hasWickets);
-  if (cardNone) cardNone.classList.toggle('active', !hasWickets);
+function onHeroWicketsSelectChange(val) {
+  const hint = document.getElementById('hero-wickets-hint');
+  if (!hint) return;
+  if (val === 'false') {
+    hint.innerText = "No physical stumps in video. On video upload at frame 0/1, you can adjust the batsman wicket to calibrate trajectory and apply to all videos in this spell.";
+    hint.style.color = "#ffab00";
+  } else {
+    hint.innerText = "Pitch has visible stumps. Trajectory is calibrated automatically via AI stumps detection.";
+    hint.style.color = "var(--text-secondary)";
+  }
 }
 
 /**
@@ -1095,7 +1110,7 @@ async function submitCreateSessionFromHero() {
   const bowlingStyle = document.getElementById('hero-bowling-style')?.value || 'Right-arm Fast';
   const sessionName = document.getElementById('hero-session-name')?.value.trim();
   const targetBalls = parseInt(document.getElementById('hero-target-balls-val')?.value || '5', 10);
-  const hasWickets = document.getElementById('hero-has-wickets-val')?.value !== 'false';
+  const hasWickets = document.getElementById('hero-pitch-wickets')?.value !== 'false';
 
   if (!bowlerName || !sessionName) {
     alert("Please enter both Bowler Name and Spell Title.");

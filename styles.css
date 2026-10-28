@@ -1888,6 +1888,19 @@ body.dark-theme .theme-toggle-thumb {
   line-height: 1.4;
 }
 
+.input-hint-sub {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin: 4px 0 0 2px;
+  transition: color 0.2s ease;
+}
+
+.select-box-wrap {
+  position: relative;
+  width: 100%;
+}
+
 .hero-action-row {
   margin-top: 10px;
 }

@@ -535,30 +535,14 @@
           </div>
 
           <div class="form-item">
-            <label>Physical Pitch Wickets Setup</label>
-            <div class="wickets-choice-grid">
-              <div class="wicket-choice-card active" id="hero-wicket-choice-present" onclick="setHeroWicketsChoice(true)">
-                <div class="choice-radio-circle"></div>
-                <div class="choice-info">
-                  <div class="choice-title">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="4" width="2" height="16" rx="1"/><rect x="11" y="4" width="2" height="16" rx="1"/><rect x="17" y="4" width="2" height="16" rx="1"/><rect x="3" y="2" width="18" height="2" rx="1"/></svg>
-                    <span>Physical Wickets Present</span>
-                  </div>
-                  <p class="choice-desc">Video contains physical stumps. AI automatically detects wickets on the pitch.</p>
-                </div>
-              </div>
-              <div class="wicket-choice-card" id="hero-wicket-choice-none" onclick="setHeroWicketsChoice(false)">
-                <div class="choice-radio-circle"></div>
-                <div class="choice-info">
-                  <div class="choice-title">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 14h-2v-2h2zm0-4h-2V7h2z"/></svg>
-                    <span>No Wickets (Manual Batsman Stumps)</span>
-                  </div>
-                  <p class="choice-desc">No stumps in video. On video upload at frame 0/1, adjust the batsman wicket to calibrate pitch &amp; apply to all videos.</p>
-                </div>
-              </div>
+            <label for="hero-pitch-wickets">Pitch Wickets Setup</label>
+            <div class="select-box-wrap">
+              <select id="hero-pitch-wickets" class="input-light select-light" onchange="onHeroWicketsSelectChange(this.value)">
+                <option value="true" selected>Physical Wickets Present (Auto AI Detection)</option>
+                <option value="false">No Wickets (Manual Batsman Stumps Calibration)</option>
+              </select>
             </div>
-            <input type="hidden" id="hero-has-wickets-val" value="true" />
+            <p id="hero-wickets-hint" class="input-hint-sub">Pitch has visible stumps. Trajectory is calibrated automatically via AI stumps detection.</p>
           </div>
 
           <div class="hero-action-row">
@@ -1440,6 +1424,14 @@
             <button type="button" class="edit-target-pill" data-edit-balls="10" onclick="setEditTargetBalls(10)">10 Deliveries</button>
           </div>
           <input type="hidden" id="edit-target-balls-val" value="5" />
+        </div>
+
+        <div class="form-group-modal">
+          <label for="edit-pitch-wickets">Pitch Wickets Setup</label>
+          <select id="edit-pitch-wickets" class="modal-input modal-select">
+            <option value="true">Physical Wickets Present (Auto AI Detection)</option>
+            <option value="false">No Wickets (Manual Batsman Stumps Calibration)</option>
+          </select>
         </div>
 
         <div class="modal-footer-actions">
