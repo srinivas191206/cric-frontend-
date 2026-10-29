@@ -32,11 +32,17 @@ const SPELL_BALL_COLORS = [
 // ============================================================================
 // SCREEN 01: THEME CONTROLLER (LIGHT / DARK MODES)
 // ============================================================================
-let currentTheme = 'light';
+let currentTheme = 'dark';
 
 function initTheme() {
   const urlParams = new URLSearchParams(window.location.search);
-  const themeParam = urlParams.get('theme');
+  let themeParam = urlParams.get('theme');
+  if (!themeParam && window.location.hash.includes('theme=')) {
+    const parts = window.location.hash.split('?');
+    if (parts[1]) {
+      themeParam = new URLSearchParams(parts[1]).get('theme');
+    }
+  }
   const savedTheme = themeParam || localStorage.getItem('trajecta_theme') || 'dark';
   applyTheme(savedTheme);
 }
@@ -68,6 +74,343 @@ function applyTheme(theme) {
 }
 
 // ============================================================================
+// MOTIONBITS RUBBER SEGMENT NAV CONTROLLER
+// Parameters: stretch: 100, squash: 3, speed: 1, glide: 75, thumb: #fafafa
+// ============================================================================
+let rubberNavCurrentY = null;
+let rubberNavAnimation = null;
+
+function updateRubberNavThumb(animate = true) {
+  const track = document.getElementById('sidebar-rubber-nav-track');
+  const thumb = document.getElementById('sidebar-rubber-thumb');
+  if (!track || !thumb) return;
+
+  const activeItem = track.querySelector('.sidebar-nav-item.active') || track.querySelector('.sidebar-nav-item');
+  if (!activeItem) return;
+
+  const trackRect = track.getBoundingClientRect();
+  const itemRect = activeItem.getBoundingClientRect();
+
+  const targetY = itemRect.top - trackRect.top;
+  const targetH = itemRect.height || 40;
+
+  // Initial render / instant positioning
+  if (!animate || rubberNavCurrentY === null) {
+    if (rubberNavAnimation) {
+      rubberNavAnimation.cancel();
+      rubberNavAnimation = null;
+    }
+    thumb.style.transform = `translateY(${targetY}px) scale(1, 1)`;
+    thumb.style.height = `${targetH}px`;
+    thumb.style.opacity = '1';
+    rubberNavCurrentY = targetY;
+    return;
+  }
+
+  const deltaY = targetY - rubberNavCurrentY;
+  if (Math.abs(deltaY) < 1) {
+    thumb.style.transform = `translateY(${targetY}px) scale(1, 1)`;
+    thumb.style.height = `${targetH}px`;
+    return;
+  }
+
+  const distance = Math.abs(deltaY);
+  const direction = deltaY > 0 ? 1 : -1;
+
+  // Motionbits rubber squash & stretch physics
+  const stretchFactor = Math.min(1 + (distance / 200) * 0.42, 1.40);
+  const squashFactor = Math.max(1 - (distance / 420) * 0.16, 0.90);
+
+  let startY = rubberNavCurrentY;
+  if (rubberNavAnimation && rubberNavAnimation.playState === 'running') {
+    const thumbRect = thumb.getBoundingClientRect();
+    startY = thumbRect.top - trackRect.top;
+    rubberNavAnimation.cancel();
+  }
+
+  const currentDelta = targetY - startY;
+  const duration = Math.min(Math.max(290 + distance * 0.48, 330), 440);
+
+  const keyframes = [
+    {
+      transform: `translateY(${startY}px) scale(1, 1)`,
+      offset: 0
+    },
+    {
+      transform: `translateY(${startY + currentDelta * 0.32}px) scale(${squashFactor}, ${stretchFactor})`,
+      offset: 0.30,
+      easing: 'cubic-bezier(0.2, 0.9, 0.3, 1)'
+    },
+    {
+      transform: `translateY(${startY + currentDelta * 0.70}px) scale(${squashFactor + 0.03}, ${stretchFactor - 0.05})`,
+      offset: 0.60,
+      easing: 'cubic-bezier(0.2, 0.9, 0.3, 1)'
+    },
+    {
+      transform: `translateY(${targetY + direction * Math.min(distance * 0.05, 5)}px) scale(${1 + (1 - squashFactor) * 0.85}, ${1 - (stretchFactor - 1) * 0.45})`,
+      offset: 0.82,
+      easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)'
+    },
+    {
+      transform: `translateY(${targetY - direction * Math.min(distance * 0.02, 2)}px) scale(0.99, 1.02)`,
+      offset: 0.92,
+      easing: 'ease-out'
+    },
+    {
+      transform: `translateY(${targetY}px) scale(1, 1)`,
+      offset: 1
+    }
+  ];
+
+  thumb.style.height = `${targetH}px`;
+  rubberNavAnimation = thumb.animate(keyframes, {
+    duration: duration,
+    easing: 'linear',
+    fill: 'forwards'
+  });
+
+  rubberNavAnimation.onfinish = () => {
+    thumb.style.transform = `translateY(${targetY}px) scale(1, 1)`;
+    rubberNavCurrentY = targetY;
+    rubberNavAnimation = null;
+  };
+}
+
+function initRubberNavSegment() {
+  const track = document.getElementById('sidebar-rubber-nav-track');
+  if (!track) return;
+
+  requestAnimationFrame(() => {
+    updateRubberNavThumb(false);
+  });
+
+  window.addEventListener('resize', () => {
+    updateRubberNavThumb(false);
+  });
+
+  const items = track.querySelectorAll('.sidebar-nav-item');
+  items.forEach(item => {
+    item.addEventListener('click', () => {
+      items.forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+      updateRubberNavThumb(true);
+    });
+  });
+}
+
+// ============================================================================
+// MOTIONBITS SPECULAR OUTLINE CONTROLLER
+// Parameters:
+//   thickness: 1.2, radius: 18, lineColor: "#ffffff", baseColor: "#525252",
+//   intensity: 1, idleIntensity: 0.35, shineSize: 10, shineFade: 34, glow: 1,
+//   followMouse: true, proximity: 250, tint: "#ffffff", tintOpacity: 0.04
+// ============================================================================
+let refreshSpecularCards = null;
+
+function initSpecularOutlines() {
+  const SELECTOR = '.quick-stat-box, .overview-kpi-card, .tele-box, .kpi-card, .release-metric-tile, .pace-metric-tile, .specular-outline, .specular-pill';
+  
+  const PROXIMITY = 250;
+  const IDLE_INTENSITY = 0.35;
+  const ACTIVE_INTENSITY = 1.0;
+  const TINT_OPACITY = 0.04;
+  const GLOW_AMOUNT = 1.0;
+  const LERP_SPEED = 0.22; // Smooth liquid transition speed
+
+  let mouseX = -9999;
+  let mouseY = -9999;
+  let isMouseActive = false;
+  let animLoopId = null;
+  let isAnimating = false;
+
+  // Track each card's continuous animation state
+  const cardStates = new Map();
+
+  function projectToPerimeter(relX, relY, width, height) {
+    const cx = width / 2;
+    const cy = height / 2;
+    const dx = relX - cx;
+    const dy = relY - cy;
+
+    if (Math.abs(dx) < 1e-4 && Math.abs(dy) < 1e-4) {
+      return { x: cx, y: 0 };
+    }
+
+    // Ray from center towards cursor intersects the rectangle boundary
+    const scale = Math.min((width / 2) / Math.max(1e-4, Math.abs(dx)), (height / 2) / Math.max(1e-4, Math.abs(dy)));
+    return {
+      x: cx + dx * scale,
+      y: cy + dy * scale
+    };
+  }
+
+  function getCardState(card) {
+    let state = cardStates.get(card);
+    if (!state) {
+      const rect = card.getBoundingClientRect();
+      const w = rect.width || 100;
+      state = {
+        currentX: w / 2,
+        currentY: 0,
+        targetX: w / 2,
+        targetY: 0,
+        currentIntensity: IDLE_INTENSITY,
+        targetIntensity: IDLE_INTENSITY,
+        currentTint: 0,
+        targetTint: 0,
+        currentGlow: 0,
+        targetGlow: 0,
+        tintX: w / 2,
+        tintY: 0,
+        active: false
+      };
+      cardStates.set(card, state);
+    }
+    return state;
+  }
+
+  function startAnimationLoop() {
+    if (!isAnimating) {
+      isAnimating = true;
+      animLoopId = requestAnimationFrame(animationStep);
+    }
+  }
+
+  function updateCardTargets() {
+    const cards = Array.from(document.querySelectorAll(SELECTOR));
+    const windowH = window.innerHeight;
+    const windowW = window.innerWidth;
+
+    for (let i = 0; i < cards.length; i++) {
+      const card = cards[i];
+      if (!card.isConnected) continue;
+
+      const rect = card.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0 || rect.bottom < -50 || rect.top > windowH + 50 || rect.right < -50 || rect.left > windowW + 50) {
+        continue;
+      }
+
+      const state = getCardState(card);
+
+      // Distance from mouse to card edge
+      const distX = Math.max(0, rect.left - mouseX, mouseX - rect.right);
+      const distY = Math.max(0, rect.top - mouseY, mouseY - rect.bottom);
+      const distance = Math.hypot(distX, distY);
+
+      if (distance <= PROXIMITY) {
+        const factor = 1 - (distance / PROXIMITY);
+        const smooth = factor * factor * (3 - 2 * factor);
+
+        state.targetIntensity = IDLE_INTENSITY + (ACTIVE_INTENSITY - IDLE_INTENSITY) * smooth;
+        state.targetTint = TINT_OPACITY * smooth;
+        state.targetGlow = GLOW_AMOUNT * smooth;
+
+        const relX = mouseX - rect.left;
+        const relY = mouseY - rect.top;
+
+        // Smooth continuous perimeter outline projection
+        const pt = projectToPerimeter(relX, relY, rect.width, rect.height);
+        state.targetX = pt.x;
+        state.targetY = pt.y;
+        state.tintX = relX;
+        state.tintY = relY;
+        state.active = true;
+      } else if (state.active) {
+        // Return to idle top highlight
+        state.targetX = rect.width / 2;
+        state.targetY = 0;
+        state.targetIntensity = IDLE_INTENSITY;
+        state.targetTint = 0;
+        state.targetGlow = 0;
+        state.tintX = rect.width / 2;
+        state.tintY = 0;
+        state.active = false;
+      }
+    }
+  }
+
+  function animationStep() {
+    let hasMotion = false;
+    const cards = Array.from(document.querySelectorAll(SELECTOR));
+
+    for (let i = 0; i < cards.length; i++) {
+      const card = cards[i];
+      if (!card.isConnected) continue;
+      const state = cardStates.get(card);
+      if (!state) continue;
+
+      const dx = state.targetX - state.currentX;
+      const dy = state.targetY - state.currentY;
+      const di = state.targetIntensity - state.currentIntensity;
+
+      if (Math.abs(dx) > 0.08 || Math.abs(dy) > 0.08 || Math.abs(di) > 0.003) {
+        hasMotion = true;
+        state.currentX += dx * LERP_SPEED;
+        state.currentY += dy * LERP_SPEED;
+        state.currentIntensity += di * LERP_SPEED;
+        state.currentTint += (state.targetTint - state.currentTint) * LERP_SPEED;
+        state.currentGlow += (state.targetGlow - state.currentGlow) * LERP_SPEED;
+
+        card.style.setProperty('--spec-x', `${state.currentX.toFixed(1)}px`);
+        card.style.setProperty('--spec-y', `${state.currentY.toFixed(1)}px`);
+        if (state.tintX !== undefined) {
+          card.style.setProperty('--tint-x', `${state.tintX.toFixed(1)}px`);
+          card.style.setProperty('--tint-y', `${state.tintY.toFixed(1)}px`);
+        }
+        card.style.setProperty('--spec-intensity', state.currentIntensity.toFixed(3));
+        card.style.setProperty('--spec-tint-opacity', state.currentTint.toFixed(4));
+        card.style.setProperty('--spec-glow', state.currentGlow.toFixed(3));
+      }
+    }
+
+    if (hasMotion || isMouseActive) {
+      animLoopId = requestAnimationFrame(animationStep);
+    } else {
+      isAnimating = false;
+      animLoopId = null;
+    }
+  }
+
+  refreshSpecularCards = function() {
+    const cards = Array.from(document.querySelectorAll(SELECTOR));
+    cards.forEach(card => {
+      const state = getCardState(card);
+      card.style.setProperty('--spec-x', `${state.currentX.toFixed(1)}px`);
+      card.style.setProperty('--spec-y', `${state.currentY.toFixed(1)}px`);
+      card.style.setProperty('--tint-x', `${state.currentX.toFixed(1)}px`);
+      card.style.setProperty('--tint-y', `${state.currentY.toFixed(1)}px`);
+      card.style.setProperty('--spec-intensity', state.currentIntensity.toFixed(3));
+      card.style.setProperty('--spec-tint-opacity', state.currentTint.toFixed(4));
+      card.style.setProperty('--spec-glow', state.currentGlow.toFixed(3));
+    });
+    startAnimationLoop();
+  };
+
+  window.addEventListener('pointermove', (e) => {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+    isMouseActive = true;
+    updateCardTargets();
+    startAnimationLoop();
+  }, { passive: true });
+
+  window.addEventListener('pointerleave', () => {
+    mouseX = -9999;
+    mouseY = -9999;
+    isMouseActive = false;
+    updateCardTargets();
+    startAnimationLoop();
+  });
+
+  window.addEventListener('resize', () => {
+    updateCardTargets();
+    startAnimationLoop();
+  }, { passive: true });
+
+  refreshSpecularCards();
+}
+
+// ============================================================================
 // DASHBOARD NAVIGATION & VIEWPORT CONTROLLER
 // ============================================================================
 let currentDashboardView = 'overview';
@@ -81,6 +424,7 @@ const VIEW_TITLES = {
 };
 
 function switchDashboardView(viewId) {
+  viewId = (viewId || 'overview').split('?')[0];
   let targetPanelId = 'view-' + viewId;
   let targetNavView = viewId;
 
@@ -123,6 +467,27 @@ function switchDashboardView(viewId) {
       item.classList.remove('active');
     }
   });
+
+  if (typeof updateRubberNavThumb === 'function') {
+    updateRubberNavThumb(true);
+  }
+
+  if (typeof refreshSpecularCards === 'function') {
+    setTimeout(refreshSpecularCards, 40);
+  }
+
+  if (typeof refreshWebsiteGradualBlurs === 'function') {
+    setTimeout(refreshWebsiteGradualBlurs, 50);
+    setTimeout(refreshWebsiteGradualBlurs, 200);
+  }
+
+  if (typeof triggerViewAnimatedContent === 'function') {
+    setTimeout(() => triggerViewAnimatedContent(viewId), 30);
+  }
+
+  if (typeof triggerViewCountUps === 'function') {
+    setTimeout(() => triggerViewCountUps(viewId), 60);
+  }
 
   // Update breadcrumb title
   const breadcrumb = document.getElementById('topbar-breadcrumb-title');
@@ -340,6 +705,15 @@ function updateCommandCenterLiveInsights(session, dels) {
   const okpiStumps = document.getElementById('okpi-stumps-val');
   if (okpiStumps) okpiStumps.textContent = `${threatPct}%`;
   if (qsThreat) qsThreat.textContent = `${threatPct}% Projected`;
+
+  if (typeof applyCountUp === 'function') {
+    applyCountUp('#okpi-avg-speed', { to: parseFloat(avgKph.toFixed(1)) });
+    applyCountUp('#okpi-length-pct', { to: goodPct, suffix: '%' });
+    applyCountUp('#okpi-swing-val', { to: parseFloat(avgSwing.toFixed(2)) });
+    applyCountUp('#okpi-release-val', { to: parseFloat(avgRel.toFixed(2)) });
+    applyCountUp('#okpi-stumps-val', { to: threatPct, suffix: '%' });
+    applyCountUp('#qs-peak-speed', { to: parseFloat(maxKph.toFixed(1)), suffix: ' km/h' });
+  }
 
   // Length Zone Distribution Bars
   const setBar = (statId, barId, pct, n) => {
@@ -683,12 +1057,35 @@ document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   initHeroPreviewPlayer();
   initNavScrollSpy();
+  initRubberNavSegment();
+  initSpecularOutlines();
+  if (typeof initWebsiteGradualBlurs === 'function') {
+    initWebsiteGradualBlurs();
+  }
+  if (typeof initWebsiteAnimatedContent === 'function') {
+    initWebsiteAnimatedContent();
+  }
+  if (typeof initWebsiteCountUps === 'function') {
+    initWebsiteCountUps();
+  }
 
   initSessions();
   initDragAndDrop();
   initCommandCenterDropZone();
   initTrimControls();
   initDownloadButton();
+
+  const initialHash = window.location.hash.replace('#', '').split('?')[0];
+  if (initialHash && VIEW_TITLES[initialHash]) {
+    switchDashboardView(initialHash);
+  }
+
+  window.addEventListener('hashchange', () => {
+    const currentHash = window.location.hash.replace('#', '').split('?')[0];
+    if (currentHash && VIEW_TITLES[currentHash] && currentHash !== currentDashboardView) {
+      switchDashboardView(currentHash);
+    }
+  });
 
   window.addEventListener('resize', () => {
     if (isStadiumModalOpen) onStadiumResize();
@@ -1437,6 +1834,12 @@ function selectSessionBall(index, playVideo = true) {
   if (statusBadge) {
     statusBadge.innerText = `BALL ${d.ball_number || index + 1} REPLAY`;
     statusBadge.className = "badge-ball-status badge-ball-active";
+  }
+
+  if (typeof applyCountUp === 'function') {
+    if (d.speed_mph) applyCountUp('#stat-speed-mph', { to: Math.round(d.speed_mph) });
+    if (d.speed_kph) applyCountUp('#stat-speed-kph', { to: Math.round(d.speed_kph), suffix: ' km/h' });
+    if (d.swing_sf !== undefined) applyCountUp('#stat-swing-val', { to: parseFloat(d.swing_sf) });
   }
 
   updateDownloadButton(d, 'video', `ball_${d.ball_number || index + 1}_`);
@@ -2275,6 +2678,15 @@ function updateInsightsKPIs(stats, deliveries) {
   if (avgSwing) avgSwing.innerText = stats.avg_swing_sf !== undefined ? stats.avg_swing_sf.toFixed(2) : "0.0";
   if (avgSpin) avgSpin.innerText = stats.avg_spin_deg !== undefined ? stats.avg_spin_deg.toFixed(1) : "0.0";
   if (consistency) consistency.innerText = `${stats.consistency_score || 0}%`;
+
+  if (typeof applyCountUp === 'function') {
+    if (stats.avg_speed_mph) applyCountUp('#insights-avg-speed', { to: parseFloat(stats.avg_speed_mph.toFixed(1)) });
+    const relH = stats.avg_release_height_m || (deliveries.length > 0 ? (deliveries.reduce((a, b) => a + (b.release_height_m || 2.15), 0) / deliveries.length) : 2.15);
+    applyCountUp('#insights-avg-release', { to: parseFloat(relH.toFixed(2)) });
+    if (stats.avg_swing_sf !== undefined) applyCountUp('#insights-avg-swing', { to: parseFloat(stats.avg_swing_sf.toFixed(2)) });
+    if (stats.avg_spin_deg !== undefined) applyCountUp('#insights-avg-spin', { to: parseFloat(stats.avg_spin_deg.toFixed(1)) });
+    if (stats.consistency_score !== undefined) applyCountUp('#insights-consistency', { to: stats.consistency_score, suffix: '%' });
+  }
 }
 
 function renderInsightsZoneBars(stats, totalBalls) {
@@ -3315,6 +3727,15 @@ function renderPaceProgressionChart(deliveries, stats) {
   if (spreadEl) spreadEl.innerText = `± ${spread.toFixed(1)} mph`;
   if (benchLbl) benchLbl.innerText = `Session Average Benchmark: ${avgSpeed.toFixed(1)} mph (${(avgSpeed * 1.60934).toFixed(1)} km/h)`;
 
+  if (typeof applyCountUp === 'function') {
+    applyCountUp('#pace-max-speed', { to: parseFloat(maxSpeed.toFixed(1)), suffix: ' mph' });
+    applyCountUp('#pace-max-speed-kph', { to: parseFloat((maxSpeed * 1.60934).toFixed(1)), suffix: ' km/h' });
+    applyCountUp('#pace-min-speed', { to: parseFloat(minSpeed.toFixed(1)), suffix: ' mph' });
+    applyCountUp('#pace-min-speed-kph', { to: parseFloat((minSpeed * 1.60934).toFixed(1)), suffix: ' km/h' });
+    applyCountUp('#pace-spread', { to: parseFloat(spread.toFixed(1)), prefix: '± ', suffix: ' mph' });
+    applyCountUp('#pace-decay', { to: 14.2, prefix: '~', suffix: '%' });
+  }
+
   // Bar scale: baseline around minSpeed - 4, top around maxSpeed + 4
   const scaleBase = Math.max(30, minSpeed - 6);
   const scaleRange = Math.max(10, (maxSpeed + 4) - scaleBase);
@@ -3458,6 +3879,18 @@ function closeStadiumDRSModal() {
   if (stadiumAnimationId) {
     cancelAnimationFrame(stadiumAnimationId);
     stadiumAnimationId = null;
+  }
+
+  const navItems = document.querySelectorAll('.sidebar-nav-item');
+  navItems.forEach(item => {
+    if (item.getAttribute('data-view') === currentDashboardView) {
+      item.classList.add('active');
+    } else {
+      item.classList.remove('active');
+    }
+  });
+  if (typeof updateRubberNavThumb === 'function') {
+    updateRubberNavThumb(true);
   }
 }
 

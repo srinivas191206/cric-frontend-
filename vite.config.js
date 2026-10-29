@@ -4,9 +4,27 @@ import path from 'path';
 export default defineConfig({
   root: '.',
   publicDir: false,
+  plugins: [
+    {
+      name: 'serve-static-prefix',
+      configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+          if (req.url && req.url.startsWith('/static/')) {
+            req.url = req.url.replace(/^\/static/, '');
+          }
+          next();
+        });
+      }
+    }
+  ],
   resolve: {
     alias: {
       '/static': path.resolve(__dirname, '.')
+    }
+  },
+  css: {
+    postcss: {
+      plugins: []
     }
   },
   server: {

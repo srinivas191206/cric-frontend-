@@ -38,10 +38,28 @@
   font-display: swap;
 }
 
-/* 5. ZARATHUSTRA (Sidebar headings and navigation, chart titles and table headings, buttons and status badges) */
+/* 5. REFLOW SANS DEMO (Sidebar navigation, buttons, badges, tabs, and table headings) */
+@font-face {
+  font-family: 'Reflow Sans DEMO';
+  src: url('/fonts/ReflowSansDEMO.ttf') format('truetype');
+  font-weight: 300 400 500 600 700 800;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0020-007E;
+}
+
+@font-face {
+  font-family: 'Reflow Sans';
+  src: url('/fonts/ReflowSansDEMO.ttf') format('truetype');
+  font-weight: 300 400 500 600 700 800;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0020-007E;
+}
+
 @font-face {
   font-family: 'Zarathustra';
-  src: url('/static/fonts/zarathustra-v01.otf') format('opentype');
+  src: url('/fonts/zarathustra-v01.otf') format('opentype');
   font-weight: 400 700;
   font-style: normal;
   font-display: swap;
@@ -99,9 +117,10 @@
   --font-analytics-heading: 'Optician Sans', sans-serif;
   --font-dashboard-title: 'Apfel Grotezk', 'Bagnard', var(--font-body);
   --font-dashboard-serif: 'Bagnard', serif;
-  --font-sidebar-nav: 'Zarathustra', var(--font-body);
-  --font-chart-table: 'Zarathustra', var(--font-body);
-  --font-btn-badge: 'Zarathustra', var(--font-body);
+  --font-reflow: 'Reflow Sans DEMO', 'Reflow Sans', -apple-system, sans-serif;
+  --font-sidebar-nav: var(--font-reflow);
+  --font-chart-table: var(--font-reflow);
+  --font-btn-badge: var(--font-reflow);
 
   /* Spacing & Radii */
   --radius-sm: 6px;
@@ -221,15 +240,15 @@ body, html, p, input, select, textarea, label {
   letter-spacing: -0.01em;
 }
 
-/* Role 5: zarathustra — Sidebar headings & navigation, Chart titles & table headings, Buttons & status badges */
+/* Role 5: Reflow Sans DEMO — Sidebar headings & navigation, Chart titles & table headings, Buttons & status badges, Tabs */
 /* 5A: Sidebar Headings and Navigation */
 .sidebar-group-label,
 .sidebar-brand-tag,
 .sidebar-nav-item,
 .sidebar-nav-text,
 .sidebar-bowler-name {
-  font-family: 'Zarathustra', sans-serif !important;
-  letter-spacing: 0.02em;
+  font-family: 'Reflow Sans DEMO', 'Reflow Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  letter-spacing: 0.01em;
 }
 
 /* 5B: Chart Titles and Table Headings */
@@ -240,11 +259,11 @@ table th,
 .chart-title,
 .chart-heading,
 .table-head-lbl {
-  font-family: 'Zarathustra', sans-serif !important;
+  font-family: 'Reflow Sans DEMO', 'Reflow Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
   letter-spacing: 0.04em;
 }
 
-/* 5C: Buttons and Status Badges */
+/* 5C: Buttons, Status Badges & Visualization Tabs */
 button,
 .btn-primary,
 .btn-start-spell,
@@ -283,8 +302,10 @@ button,
 .engine-label,
 .engine-pulse-dot + span,
 .custom-modal-badge,
-.badge-pill {
-  font-family: 'Zarathustra', sans-serif !important;
+.badge-pill,
+.perf-tab-btn,
+.perf-tab-btn span {
+  font-family: 'Reflow Sans DEMO', 'Reflow Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
 }
 
 
@@ -3064,7 +3085,7 @@ body.dark-theme .theme-toggle-thumb {
   background: transparent;
   border: none;
   color: var(--text-secondary);
-  font-family: var(--font-sans);
+  font-family: 'Reflow Sans DEMO', 'Reflow Sans', -apple-system, sans-serif !important;
   font-size: 0.78rem;
   font-weight: 600;
   padding: 8px 14px;
@@ -4653,33 +4674,68 @@ body.dark-theme .table-container {
 
 /* Sidebar Brand Header */
 .sidebar-brand-box {
-  padding: 22px 20px 16px;
+  padding: 22px 16px 16px;
   border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
 }
 
 .sidebar-logo-link {
-  display: inline-flex;
+  display: flex;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
   text-decoration: none;
+  width: 100%;
   transition: opacity var(--transition-fast);
 }
 
 .sidebar-logo-link:hover {
-  opacity: 0.88;
+  opacity: 0.95;
 }
 
 .sidebar-brand-logo {
-  height: 32px;
-  width: auto;
+  width: 110px;
+  height: 110px;
+  max-width: 120px;
   object-fit: contain;
   display: block;
+  margin: 0 auto;
+  filter: drop-shadow(0 6px 16px rgba(229, 9, 45, 0.22));
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.35s ease;
+}
+
+.sidebar-logo-link:hover .sidebar-brand-logo {
+  transform: scale(1.05);
+  filter: drop-shadow(0 10px 24px rgba(229, 9, 45, 0.38));
+}
+
+.sidebar-brand-title {
+  font-family: 'Anybody', var(--font-body);
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: var(--text-main);
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-brand-title .brand-accent {
+  color: var(--crimson);
 }
 
 .sidebar-brand-badge-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-top: 10px;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+  width: 100%;
+  flex-wrap: wrap;
 }
 
 .sidebar-brand-tag {
@@ -4863,47 +4919,152 @@ body.dark-theme .table-container {
   padding: 12px 10px 4px;
 }
 
+/* Motionbits RubberSegment Nav Architecture (Seamless on normal background) */
+.sidebar-rubber-nav-track {
+  position: relative;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: visible;
+}
+
+body.light-theme .sidebar-rubber-nav-track,
+body.dark-theme .sidebar-rubber-nav-track {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.sidebar-rubber-thumb {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 40px;
+  background: #ffffff;
+  border-radius: 10px;
+  z-index: 1;
+  pointer-events: none;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.18);
+  transform-origin: center center;
+  will-change: transform, height;
+}
+
+body.light-theme .sidebar-rubber-thumb {
+  background: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+}
+
+body.dark-theme .sidebar-rubber-thumb {
+  background: #ffffff !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.25) !important;
+}
+
 .sidebar-nav-item {
   display: flex;
   align-items: center;
   width: 100%;
-  padding: 9px 12px;
-  border-radius: var(--radius-md);
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--text-secondary);
-  font-family: var(--font-sans);
-  font-size: 13px;
+  padding: 9px 9px;
+  border-radius: 10px;
+  border: none !important;
+  background: transparent !important;
+  color: #fafafa;
+  font-family: 'Reflow Sans DEMO', 'Reflow Sans', -apple-system, sans-serif !important;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   text-align: left;
-  transition: all var(--transition-fast);
-  gap: 10px;
+  transition: color 0.2s ease, opacity 0.2s ease;
+  gap: 8px;
   position: relative;
+  z-index: 2;
+  user-select: none;
+}
+
+body.light-theme .sidebar-nav-item {
+  color: #4B5563;
+}
+
+body.dark-theme .sidebar-nav-item {
+  color: #B8C0CC !important;
+  opacity: 0.9;
 }
 
 .sidebar-nav-item:hover {
-  background: var(--bg-hover);
-  color: var(--text-main);
-  border-color: var(--border-subtle);
+  background: transparent !important;
+  opacity: 1 !important;
+  color: #ffffff !important;
+}
+
+body.light-theme .sidebar-nav-item:hover {
+  color: #111827 !important;
 }
 
 .sidebar-nav-item.active {
-  background: var(--crimson-subtle);
-  color: var(--crimson);
-  font-weight: 700;
-  border-color: rgba(229, 9, 45, 0.22);
+  background: transparent !important;
+  border: none !important;
+  color: #18181b !important;
+  font-weight: 700 !important;
+  opacity: 1 !important;
+}
+
+body.dark-theme .sidebar-nav-item.active {
+  background-color: transparent !important;
+  color: #18181b !important;
+  border: none !important;
 }
 
 .sidebar-nav-item.active::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 6px;
-  bottom: 6px;
-  width: 3.5px;
-  border-radius: 0 4px 4px 0;
-  background: var(--crimson);
+  display: none !important;
+}
+
+.sidebar-nav-item .sidebar-nav-icon {
+  font-size: 15px;
+  width: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+  transition: color 0.2s ease;
+}
+
+.sidebar-nav-item .sidebar-nav-icon svg {
+  stroke: currentColor;
+}
+
+.sidebar-nav-item.active .sidebar-nav-icon {
+  color: #18181b !important;
+}
+
+.sidebar-nav-item.active .sidebar-nav-icon svg {
+  stroke: #18181b !important;
+}
+
+.sidebar-nav-item.active .sidebar-nav-text {
+  color: #18181b !important;
+  font-weight: 700 !important;
+}
+
+.sidebar-nav-item.active .sidebar-nav-pill {
+  background: rgba(22, 163, 74, 0.16) !important;
+  color: #15803d !important;
+  border: 1px solid rgba(22, 163, 74, 0.25) !important;
+}
+
+.sidebar-nav-item.active .sidebar-nav-badge {
+  background: rgba(24, 24, 27, 0.08) !important;
+  color: #18181b !important;
+  border: 1px solid rgba(24, 24, 27, 0.18) !important;
+}
+
+.sidebar-nav-item.active .sidebar-nav-tag-hot {
+  background: #E5092D !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(229, 9, 45, 0.35);
 }
 
 .sidebar-nav-icon {
@@ -6101,6 +6262,10 @@ body.dark-theme .sidebar-footer {
   border-color: #262A33 !important;
 }
 
+body.dark-theme .sidebar-brand-title {
+  color: #FFFFFF !important;
+}
+
 body.dark-theme .sidebar-bowler-card {
   background-color: #1F232B !important;
   border-color: #2D323E !important;
@@ -6111,18 +6276,19 @@ body.dark-theme .sidebar-bowler-name {
 }
 
 body.dark-theme .sidebar-nav-item {
-  color: #B8C0CC !important;
+  color: #fafafa !important;
+  background-color: transparent !important;
 }
 
 body.dark-theme .sidebar-nav-item:hover {
-  background-color: #242933 !important;
+  background-color: transparent !important;
   color: #FFFFFF !important;
 }
 
 body.dark-theme .sidebar-nav-item.active {
-  background-color: rgba(229, 9, 45, 0.16) !important;
-  color: #FF4D6D !important;
-  border-color: rgba(229, 9, 45, 0.35) !important;
+  background-color: transparent !important;
+  color: #18181b !important;
+  border: none !important;
 }
 
 body.dark-theme .dashboard-topbar {
@@ -7122,4 +7288,289 @@ body.dark-theme .checkbox-box {
   border-color: #2E3547 !important;
 }
 
+/* ============================================================================
+   MOTIONBITS SPECULAR BUTTON / PILL OUTLINE EFFECT
+   Config from user:
+     thickness: 1.2
+     radius: 18
+     lineColor: "#ffffff"
+     baseColor: "#525252"
+     intensity: 1
+     idleIntensity: 0.35
+     shineSize: 10
+     shineFade: 34
+     glow: 1
+     followMouse: true
+     proximity: 250
+     tint: "#ffffff"
+     tintOpacity: 0.04
+   Applied to all button/pill shaped objects in screenshots:
+     1. .quick-stat-box (Overview banner pills: Peak Pace, Target Corridor, Stumps Threat)
+     2. .overview-kpi-card (Overview 6 bowling intelligence KPI cards)
+     3. .tele-box (Delivery studio telemetry metric pills)
+     4. .kpi-card (Spell insights top KPI cards)
+     5. .release-metric-tile, .pace-metric-tile (Spell insights mini stat tiles)
+   ============================================================================ */
 
+/* 1. Base Container Setup */
+.quick-stat-box,
+.overview-kpi-card,
+.tele-box,
+.kpi-card,
+.release-metric-tile,
+.pace-metric-tile,
+.specular-outline,
+.specular-pill {
+  position: relative !important;
+  border: 1.2px solid rgba(82, 82, 82, 0.4) !important;
+  box-sizing: border-box !important;
+  --spec-x: 50%;
+  --spec-y: 0%;
+  --spec-intensity: 0.35;
+  --spec-tint-opacity: 0;
+  --spec-glow: 0;
+  --spec-shine-size: 150px;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+  isolation: isolate;
+}
+
+/* Border radii corresponding to radius={18} and proportional hierarchy */
+.overview-kpi-card,
+.kpi-card {
+  border-radius: 18px !important;
+}
+
+.quick-stat-box,
+.tele-box {
+  border-radius: 16px !important;
+}
+
+.release-metric-tile,
+.pace-metric-tile {
+  border-radius: 14px !important;
+}
+
+/* Dark mode theme border override to keep baseColor: #525252 metallic tone */
+body.dark-theme .quick-stat-box,
+body.dark-theme .overview-kpi-card,
+body.dark-theme .tele-box,
+body.dark-theme .kpi-card,
+body.dark-theme .release-metric-tile,
+body.dark-theme .pace-metric-tile {
+  border-color: rgba(82, 82, 82, 0.4) !important;
+}
+
+/* 2. Specular Outline Layer: Strictly on the 1.2px outline/border of the box */
+.quick-stat-box::before,
+.overview-kpi-card::before,
+.tele-box::before,
+.kpi-card::before,
+.release-metric-tile::before,
+.pace-metric-tile::before,
+.specular-outline::before,
+.specular-pill::before {
+  content: '';
+  position: absolute;
+  inset: -1.2px;
+  border-radius: inherit;
+  padding: 1.2px; /* thickness: 1.2 */
+  background: radial-gradient(
+    circle 150px at var(--spec-x, 50%) var(--spec-y, 0%),
+    #ffffff 0%,
+    rgba(255, 255, 255, 0.95) 10%, /* shineSize: 10 */
+    rgba(255, 255, 255, 0.35) 34%, /* shineFade: 34 */
+    rgba(82, 82, 82, 0.6) 65%,
+    rgba(82, 82, 82, 0.3) 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 10;
+  box-sizing: border-box;
+  opacity: var(--spec-intensity, 0.35);
+  transition: opacity 0.25s ease, filter 0.25s ease;
+  filter: drop-shadow(0 0 calc(var(--spec-glow, 0) * 5px) rgba(255, 255, 255, calc(var(--spec-glow, 0) * 0.45)));
+}
+
+/* 3. Specular Subtle Surface Tint (tint="#ffffff" tintOpacity={0.04}) */
+.quick-stat-box::after,
+.overview-kpi-card::after,
+.tele-box::after,
+.kpi-card::after,
+.release-metric-tile::after,
+.pace-metric-tile::after,
+.specular-outline::after,
+.specular-pill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    circle 220px at var(--tint-x, var(--spec-x, 50%)) var(--tint-y, var(--spec-y, 50%)),
+    rgba(255, 255, 255, var(--spec-tint-opacity, 0)),
+    transparent 75%
+  );
+  pointer-events: none;
+  z-index: 1;
+  transition: opacity 0.25s ease;
+}
+
+/* 4. Ensure contents within specular cards stay crisp and above the inner tint layer */
+.quick-stat-box > *,
+.overview-kpi-card > *,
+.tele-box > *,
+.kpi-card > *,
+.release-metric-tile > *,
+.pace-metric-tile > *,
+.specular-outline > *,
+.specular-pill > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* 5. Subtle Interactive Hover Glow */
+.overview-kpi-card:hover,
+.kpi-card:hover,
+.quick-stat-box:hover,
+.tele-box:hover,
+.release-metric-tile:hover,
+.pace-metric-tile:hover {
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.45), 0 0 16px rgba(255, 255, 255, 0.08);
+}
+
+/* 6. Reflow Sans DEMO Typography for All Attached Pill / Box Objects */
+.quick-stat-box .qs-lbl,
+.quick-stat-box .qs-val,
+.overview-kpi-card .okpi-label,
+.overview-kpi-card .okpi-val,
+.overview-kpi-card .okpi-unit,
+.overview-kpi-card .okpi-sub,
+.tele-box .tele-lbl,
+.tele-box .tele-num,
+.tele-box .tele-unit,
+.tele-box .tele-sub,
+.kpi-card .kpi-card-lbl,
+.kpi-card .kpi-card-val,
+.kpi-card .kpi-card-unit,
+.kpi-card .kpi-card-sub,
+.release-metric-tile .rm-lbl,
+.release-metric-tile .rm-val,
+.release-metric-tile .rm-sub,
+.pace-metric-tile .pm-lbl,
+.pace-metric-tile .pm-val,
+.pace-metric-tile .pm-sub {
+  font-family: 'Reflow Sans DEMO', 'Reflow Sans', -apple-system, sans-serif !important;
+}
+
+/* ============================================================================
+   GRADUAL BLUR COMPONENT (By Ansh Dhanani - github.com/ansh-dhanani)
+   8-layer progressive backdrop blur with exponential curve & bottom tint
+   ============================================================================ */
+.gradual-blur-wrapper {
+  pointer-events: none;
+  contain: layout style paint;
+}
+
+.gradual-blur-wrapper[data-target="page"],
+.dashboard-view-panel > .gradual-blur-wrapper {
+  position: fixed !important;
+  left: 270px !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  height: 6rem !important;
+  z-index: 850 !important;
+  pointer-events: none !important;
+}
+
+@media (max-width: 860px) {
+  .gradual-blur-wrapper[data-target="page"],
+  .dashboard-view-panel > .gradual-blur-wrapper {
+    left: 0 !important;
+  }
+}
+
+.gradual-blur-wrapper[data-target="parent"]:not(.dashboard-view-panel > .gradual-blur-wrapper) {
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  height: 6rem !important;
+  z-index: 850 !important;
+  pointer-events: none !important;
+}
+
+.gradual-blur-layers {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.gradual-blur-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transform: translateZ(0);
+  will-change: backdrop-filter;
+}
+
+.gradual-blur-tint {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+:root[data-theme="light"] .gradual-blur-tint {
+  background: linear-gradient(to bottom, transparent 0%, rgba(240, 242, 245, 0.75) 100%) !important;
+}
+
+/* ============================================================================
+   ANIMATED CONTENT (React Bits - reactbits.dev)
+   distance=100, direction="vertical", duration=0.8, ease="power3.out", stagger=0.08
+   ============================================================================ */
+.animated-content-item {
+  transform-origin: center top;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.animated-content-item.animated-content-done {
+  transform: none !important;
+  opacity: 1 !important;
+  transition: none !important;
+  will-change: auto !important;
+}
+
+/* Strict 3D Stadium DRS Isolation */
+#stadium-modal,
+#stadium-modal *,
+.stadium-modal-backdrop,
+.stadium-modal-backdrop * {
+  transform: none !important;
+  opacity: 1 !important;
+  transition: none !important;
+}
+
+#stadium-modal.hidden {
+  display: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animated-content-item {
+    transform: none !important;
+    opacity: 1 !important;
+    transition: none !important;
+  }
+}
+
+/* ============================================================================
+   COUNT UP (React Bits - reactbits.dev)
+   Smooth counting animation with tabular numbers and easeOut transition
+   ============================================================================ */
+.count-up-text {
+  font-variant-numeric: tabular-nums;
+  display: inline-block;
+}
