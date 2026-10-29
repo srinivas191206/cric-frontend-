@@ -7290,27 +7290,38 @@ body.dark-theme .checkbox-box {
 
 /* ============================================================================
    MOTIONBITS SPECULAR BUTTON / PILL OUTLINE EFFECT
-   Config from user:
-     thickness: 1.2
-     radius: 18
-     lineColor: "#ffffff"
-     baseColor: "#525252"
-     intensity: 1
-     idleIntensity: 0.35
-     shineSize: 10
-     shineFade: 34
-     glow: 1
-     followMouse: true
-     proximity: 250
-     tint: "#ffffff"
-     tintOpacity: 0.04
-   Applied to all button/pill shaped objects in screenshots:
-     1. .quick-stat-box (Overview banner pills: Peak Pace, Target Corridor, Stumps Threat)
-     2. .overview-kpi-card (Overview 6 bowling intelligence KPI cards)
-     3. .tele-box (Delivery studio telemetry metric pills)
-     4. .kpi-card (Spell insights top KPI cards)
-     5. .release-metric-tile, .pace-metric-tile (Spell insights mini stat tiles)
+   Config:
+     Dark Mode: Crisp white shine (#ffffff) with metallic base outline
+     Light Mode: Radiant crimson red shine (#E5092D) with warm chalk outline
    ============================================================================ */
+
+/* Theme Color Variables for Specular Effects */
+body.dark-theme {
+  --spec-shine-color: #ffffff;
+  --spec-shine-stop1: rgba(255, 255, 255, 0.95);
+  --spec-shine-stop2: rgba(255, 255, 255, 0.35);
+  --spec-base-border: rgba(82, 82, 82, 0.6);
+  --spec-base-border-fade: rgba(82, 82, 82, 0.3);
+  --spec-glow-color: rgba(255, 255, 255, 0.45);
+  --spec-tint-rgb: 255, 255, 255;
+  --spec-card-border: rgba(82, 82, 82, 0.4);
+  --spec-hover-shadow-base: rgba(0, 0, 0, 0.45);
+  --spec-hover-glow: rgba(255, 255, 255, 0.08);
+}
+
+body.light-theme,
+body:not(.dark-theme) {
+  --spec-shine-color: #E5092D;
+  --spec-shine-stop1: rgba(229, 9, 45, 0.95);
+  --spec-shine-stop2: rgba(229, 9, 45, 0.38);
+  --spec-base-border: rgba(224, 221, 212, 0.85);
+  --spec-base-border-fade: rgba(224, 221, 212, 0.45);
+  --spec-glow-color: rgba(229, 9, 45, 0.55);
+  --spec-tint-rgb: 229, 9, 45;
+  --spec-card-border: rgba(224, 221, 212, 0.85);
+  --spec-hover-shadow-base: rgba(21, 23, 28, 0.08);
+  --spec-hover-glow: rgba(229, 9, 45, 0.20);
+}
 
 /* 1. Base Container Setup */
 .quick-stat-box,
@@ -7322,7 +7333,7 @@ body.dark-theme .checkbox-box {
 .specular-outline,
 .specular-pill {
   position: relative !important;
-  border: 1.2px solid rgba(82, 82, 82, 0.4) !important;
+  border: 1.2px solid var(--spec-card-border, rgba(82, 82, 82, 0.4)) !important;
   box-sizing: border-box !important;
   --spec-x: 50%;
   --spec-y: 0%;
@@ -7350,7 +7361,7 @@ body.dark-theme .checkbox-box {
   border-radius: 14px !important;
 }
 
-/* Dark mode theme border override to keep baseColor: #525252 metallic tone */
+/* Dark mode theme border override */
 body.dark-theme .quick-stat-box,
 body.dark-theme .overview-kpi-card,
 body.dark-theme .tele-box,
@@ -7376,11 +7387,11 @@ body.dark-theme .pace-metric-tile {
   padding: 1.2px; /* thickness: 1.2 */
   background: radial-gradient(
     circle 150px at var(--spec-x, 50%) var(--spec-y, 0%),
-    #ffffff 0%,
-    rgba(255, 255, 255, 0.95) 10%, /* shineSize: 10 */
-    rgba(255, 255, 255, 0.35) 34%, /* shineFade: 34 */
-    rgba(82, 82, 82, 0.6) 65%,
-    rgba(82, 82, 82, 0.3) 100%
+    var(--spec-shine-color) 0%,
+    var(--spec-shine-stop1) 10%, /* shineSize: 10 */
+    var(--spec-shine-stop2) 34%, /* shineFade: 34 */
+    var(--spec-base-border) 65%,
+    var(--spec-base-border-fade) 100%
   );
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
@@ -7391,10 +7402,10 @@ body.dark-theme .pace-metric-tile {
   box-sizing: border-box;
   opacity: var(--spec-intensity, 0.35);
   transition: opacity 0.25s ease, filter 0.25s ease;
-  filter: drop-shadow(0 0 calc(var(--spec-glow, 0) * 5px) rgba(255, 255, 255, calc(var(--spec-glow, 0) * 0.45)));
+  filter: drop-shadow(0 0 calc(var(--spec-glow, 0) * 5px) var(--spec-glow-color));
 }
 
-/* 3. Specular Subtle Surface Tint (tint="#ffffff" tintOpacity={0.04}) */
+/* 3. Specular Subtle Surface Tint */
 .quick-stat-box::after,
 .overview-kpi-card::after,
 .tele-box::after,
@@ -7409,7 +7420,7 @@ body.dark-theme .pace-metric-tile {
   border-radius: inherit;
   background: radial-gradient(
     circle 220px at var(--tint-x, var(--spec-x, 50%)) var(--tint-y, var(--spec-y, 50%)),
-    rgba(255, 255, 255, var(--spec-tint-opacity, 0)),
+    rgba(var(--spec-tint-rgb), var(--spec-tint-opacity, 0)),
     transparent 75%
   );
   pointer-events: none;
@@ -7437,7 +7448,91 @@ body.dark-theme .pace-metric-tile {
 .tele-box:hover,
 .release-metric-tile:hover,
 .pace-metric-tile:hover {
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.45), 0 0 16px rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 20px -2px var(--spec-hover-shadow-base), 0 0 16px var(--spec-hover-glow);
+}
+
+/* --------------------------------------------------------------------------
+   EXPLICIT LIGHT MODE RED SHINE OVERRIDES
+   Guarantees vivid red specular shine when light theme is active
+   -------------------------------------------------------------------------- */
+body.light-theme .quick-stat-box::before,
+body.light-theme .overview-kpi-card::before,
+body.light-theme .tele-box::before,
+body.light-theme .kpi-card::before,
+body.light-theme .release-metric-tile::before,
+body.light-theme .pace-metric-tile::before,
+body.light-theme .specular-outline::before,
+body.light-theme .specular-pill::before,
+body:not(.dark-theme) .quick-stat-box::before,
+body:not(.dark-theme) .overview-kpi-card::before,
+body:not(.dark-theme) .tele-box::before,
+body:not(.dark-theme) .kpi-card::before,
+body:not(.dark-theme) .release-metric-tile::before,
+body:not(.dark-theme) .pace-metric-tile::before,
+body:not(.dark-theme) .specular-outline::before,
+body:not(.dark-theme) .specular-pill::before {
+  background: radial-gradient(
+    circle 150px at var(--spec-x, 50%) var(--spec-y, 0%),
+    #E5092D 0%,
+    rgba(229, 9, 45, 0.95) 10%,
+    rgba(229, 9, 45, 0.38) 34%,
+    rgba(224, 221, 212, 0.85) 65%,
+    rgba(224, 221, 212, 0.45) 100%
+  ) !important;
+  filter: drop-shadow(0 0 calc(var(--spec-glow, 0) * 5px) rgba(229, 9, 45, calc(var(--spec-glow, 0) * 0.55))) !important;
+}
+
+body.light-theme .quick-stat-box::after,
+body.light-theme .overview-kpi-card::after,
+body.light-theme .tele-box::after,
+body.light-theme .kpi-card::after,
+body.light-theme .release-metric-tile::after,
+body.light-theme .pace-metric-tile::after,
+body.light-theme .specular-outline::after,
+body.light-theme .specular-pill::after,
+body:not(.dark-theme) .quick-stat-box::after,
+body:not(.dark-theme) .overview-kpi-card::after,
+body:not(.dark-theme) .tele-box::after,
+body:not(.dark-theme) .kpi-card::after,
+body:not(.dark-theme) .release-metric-tile::after,
+body:not(.dark-theme) .pace-metric-tile::after,
+body:not(.dark-theme) .specular-outline::after,
+body:not(.dark-theme) .specular-pill::after {
+  background: radial-gradient(
+    circle 220px at var(--tint-x, var(--spec-x, 50%)) var(--tint-y, var(--spec-y, 50%)),
+    rgba(229, 9, 45, var(--spec-tint-opacity, 0)),
+    transparent 75%
+  ) !important;
+}
+
+body.light-theme .overview-kpi-card:hover,
+body.light-theme .kpi-card:hover,
+body.light-theme .quick-stat-box:hover,
+body.light-theme .tele-box:hover,
+body.light-theme .release-metric-tile:hover,
+body.light-theme .pace-metric-tile:hover,
+body:not(.dark-theme) .overview-kpi-card:hover,
+body:not(.dark-theme) .kpi-card:hover,
+body:not(.dark-theme) .quick-stat-box:hover,
+body:not(.dark-theme) .tele-box:hover,
+body:not(.dark-theme) .release-metric-tile:hover,
+body:not(.dark-theme) .pace-metric-tile:hover {
+  box-shadow: 0 4px 20px -2px rgba(21, 23, 28, 0.08), 0 0 16px rgba(229, 9, 45, 0.20) !important;
+}
+
+body.light-theme .quick-stat-box,
+body.light-theme .overview-kpi-card,
+body.light-theme .tele-box,
+body.light-theme .kpi-card,
+body.light-theme .release-metric-tile,
+body.light-theme .pace-metric-tile,
+body:not(.dark-theme) .quick-stat-box,
+body:not(.dark-theme) .overview-kpi-card,
+body:not(.dark-theme) .tele-box,
+body:not(.dark-theme) .kpi-card,
+body:not(.dark-theme) .release-metric-tile,
+body:not(.dark-theme) .pace-metric-tile {
+  border-color: rgba(224, 221, 212, 0.85) !important;
 }
 
 /* 6. Reflow Sans DEMO Typography for All Attached Pill / Box Objects */
