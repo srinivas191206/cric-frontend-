@@ -1,11 +1,11 @@
 // ============================================================================
-// ⏱️ CARD SLIDE ANIMATION SPEED CONFIGURATION:
+//  CARD SLIDE ANIMATION SPEED CONFIGURATION:
 // EDIT THESE NUMBERS to adjust card entrance speed & stagger gaps:
 //   ANIMATED_CONTENT_DURATION (seconds): 0.8 = Fast, 1.2 = Smooth/Medium [CURRENT], 1.8 = Slower
 //   ANIMATED_CONTENT_STAGGER (seconds): 0.08 = Quick wave [CURRENT], 0.15 = Slower wave
 // ============================================================================
-const ANIMATED_CONTENT_DURATION = 1.9; // <-- 👈 CHANGE THIS VALUE TO ADJUST CARD SPEED
-const ANIMATED_CONTENT_STAGGER = 0.08;  // <-- 👈 CHANGE THIS TO ADJUST GAP BETWEEN CARDS
+const ANIMATED_CONTENT_DURATION = 1.9; // <--  CHANGE THIS VALUE TO ADJUST CARD SPEED
+const ANIMATED_CONTENT_STAGGER = 0.08;  // <--  CHANGE THIS TO ADJUST GAP BETWEEN CARDS
 
 const DEFAULT_ANIMATED_CONTENT_CONFIG = {
   distance: 100,

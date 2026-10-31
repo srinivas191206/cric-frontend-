@@ -46,6 +46,14 @@
         <div class="sidebar-rubber-nav-track" id="sidebar-rubber-nav-track">
           <div class="sidebar-rubber-thumb" id="sidebar-rubber-thumb"></div>
         
+        <button type="button" class="sidebar-nav-item" data-view="teams-hub" onclick="switchDashboardView('teams-hub')">
+          <span class="sidebar-nav-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </span>
+          <span class="sidebar-nav-text">Teams &amp; Squads</span>
+          <span class="sidebar-nav-pill pill-amber">Hub</span>
+        </button>
+
         <button type="button" class="sidebar-nav-item active" data-view="overview" onclick="switchDashboardView('overview')">
           <span class="sidebar-nav-icon">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
@@ -126,13 +134,18 @@
       <!-- Top Command Header Bar -->
       <header class="dashboard-topbar">
         <div class="topbar-left">
-          <button type="button" class="topbar-menu-toggle" onclick="toggleMobileSidebar()" aria-label="Toggle Navigation">
+          <!-- Dynamic Cricket Logo for Team Portal (Full-Width Header) -->
+          <a href="javascript:void(0)" onclick="switchDashboardView('teams-hub')" class="topbar-dynamic-logo-link" id="topbar-dynamic-logo-link" title="TRAJECTA AI Teams Portal">
+            <img src="/static/images/trajecta_dynamic_logo_darkmode.png" alt="TRAJECTA.ai" class="topbar-dynamic-brand-img" id="topbar-dynamic-brand-img" />
+          </a>
+
+          <button type="button" class="topbar-menu-toggle" id="topbar-sidebar-toggle-btn" onclick="toggleMobileSidebar()" aria-label="Toggle Navigation">
             <span></span><span></span><span></span>
           </button>
           <div class="topbar-breadcrumb">
-            <span class="breadcrumb-root">Dashboard</span>
+            <span class="breadcrumb-root" id="breadcrumb-root-label">Dashboard</span>
             <span class="breadcrumb-sep">/</span>
-            <span class="breadcrumb-current" id="topbar-breadcrumb-title">Insights Command Center</span>
+            <span class="breadcrumb-current" id="topbar-breadcrumb-title">Teams &amp; Squads</span>
           </div>
         </div>
 
@@ -144,10 +157,26 @@
             <select id="session-select" class="topbar-session-select" onchange="switchActiveSession(this.value)">
               <option value="">-- No Active Session --</option>
             </select>
+            <button type="button" class="btn-topbar-delete-spell" id="topbar-delete-spell-btn" onclick="confirmDeleteCurrentSession()" title="Delete Current Spell" aria-label="Delete Current Spell">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+              <span>Delete Spell</span>
+            </button>
           </div>
         </div>
 
         <div class="topbar-right">
+          <!-- Back to Team Hub button (shown when analyzing from teams mode) -->
+          <button type="button" class="btn-back-to-team-hub hidden" id="btn-back-to-team-hub" onclick="switchDashboardView('teams-hub')" title="Return to Teams & Academy Hub">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            <span>Back to Teams Hub</span>
+          </button>
+          <!-- Workspace Portal Mode Switcher Pill -->
+          <button type="button" class="btn-workspace-mode-switch" id="topbar-mode-btn" onclick="openModeSelectionModal()" title="Switch Workspace: Solo Player vs Team & Academy">
+            <span class="mode-bullet" id="topbar-mode-dot"></span>
+            <span id="topbar-mode-text">👥 Team Hub</span>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+
           <!-- Light / Dark Mode Toggle Pill -->
           <button type="button" class="theme-toggle-pill" id="theme-toggle-btn" onclick="toggleAppTheme()" aria-label="Toggle light or dark theme" title="Toggle Light/Dark Theme">
             <span class="theme-opt theme-opt-light" id="theme-icon-sun">
@@ -173,6 +202,711 @@
 
       <!-- Main Content Viewport -->
       <main class="dashboard-content-viewport">
+
+        <!-- ========================================================
+             FULLTRACK AI WORKFLOW VIEW 1: "YOUR TEAMS" HUB
+        ======================================================== -->
+        <section id="view-teams-hub" class="dashboard-view-panel hidden">
+          <!-- Amber-Bordered Top Hero Banner -->
+          <div class="teams-hub-card">
+            <div class="th-content-row">
+              <div class="th-title-area">
+                <h2 class="th-main-title">Your Teams</h2>
+                <p class="th-sub-title">Select a team to manage players and review sessions</p>
+              </div>
+              <div class="th-action-controls">
+                <div class="th-search-box">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  <input type="text" id="teams-search-field" placeholder="Search teams..." oninput="onTeamsSearchInput(this.value)" />
+                </div>
+                <span class="th-refresh-status" id="teams-refreshed-time">Last refreshed just now</span>
+                <button type="button" class="btn-th-refresh" onclick="fetchAndRenderTeams()" title="Refresh Teams List">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                  <span>Refresh</span>
+                </button>
+                <button type="button" class="btn-th-create-team" onclick="openNewTeamModal()">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  <span>New Team</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Teams Cards Grid -->
+          <div class="teams-roster-grid" id="teams-roster-grid">
+            <!-- Dynamically populated team cards -->
+          </div>
+        </section>
+
+        <!-- ========================================================
+             FULLTRACK AI WORKFLOW VIEW 2: TEAM DETAILS / PLAYER ROSTER
+        ======================================================== -->
+        <section id="view-player-roster" class="dashboard-view-panel hidden">
+          <div class="roster-nav-bar">
+            <div class="roster-left">
+              <button type="button" class="btn-nav-back" onclick="switchDashboardView('teams-hub')" title="Back to Your Teams">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+              </button>
+              <div class="roster-team-heading-box">
+                <h2 class="roster-team-title" id="roster-view-team-name">TRAJECTA Squad</h2>
+                <p class="roster-team-sub" id="roster-view-team-sub">Select yourself to view your bowling sessions</p>
+              </div>
+            </div>
+            <div class="roster-right">
+              <div class="th-search-box">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="players-search-field" placeholder="Search players..." oninput="onPlayersSearchInput(this.value)" />
+              </div>
+              <span class="th-refresh-status" id="players-refreshed-time">Last refreshed just now</span>
+              <button type="button" class="btn-th-refresh" onclick="fetchAndRenderPlayers(currentActiveTeamId)" title="Refresh Players">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                <span>Refresh</span>
+              </button>
+              <button type="button" class="btn-th-create-team" onclick="openNewPlayerModal()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span>Add Player</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Players Grid -->
+          <div class="players-roster-grid" id="players-roster-grid">
+            <!-- Dynamically populated player cards -->
+          </div>
+        </section>
+
+        <!-- ========================================================
+             FULLTRACK AI WORKFLOW VIEW 3: PLAYER SESSIONS MULTI-SELECTOR
+        ======================================================== -->
+        <section id="view-player-sessions" class="dashboard-view-panel hidden">
+          <!-- Back button -->
+          <div class="player-sessions-back-row">
+            <button type="button" class="btn-nav-back" onclick="switchDashboardView('player-roster')" title="Back to Players Roster">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            </button>
+          </div>
+
+          <!-- Fulltrack AI Top Banner Card -->
+          <div class="player-banner-blue-card">
+            <div class="pbb-left">
+              <span class="pbb-team-badge" id="pbb-team-title">TRAJECTA SQUAD</span>
+              <h1 class="pbb-player-title" id="pbb-player-name">ss</h1>
+              <div class="pbb-player-style" id="pbb-player-meta">Fast Bowler · Right · Right-arm Fast</div>
+              <span class="pbb-sessions-counter" id="pbb-selection-status">1 SESSION · 0 SELECTED</span>
+            </div>
+            <div class="pbb-right">
+              <div class="pbb-initials-badge" id="pbb-player-avatar">SS</div>
+            </div>
+          </div>
+
+          <!-- Action Bar: Analyze Button + Refresh -->
+          <div class="player-sessions-action-row">
+            <div class="psa-left">
+              <button type="button" id="btn-analyze-sessions" class="btn-analyze-pill disabled" onclick="analyzeSelectedPlayerSessions()" disabled>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                <span id="btn-analyze-label">Analyze (0 sessions)</span>
+              </button>
+              <button type="button" class="btn-toggle-select-all" id="btn-toggle-select-all" onclick="toggleSelectAllPlayerSessions()">
+                Select All
+              </button>
+            </div>
+            <div class="psa-right">
+              <span class="th-refresh-status" id="sessions-refreshed-time">Last refreshed just now</span>
+              <button type="button" class="btn-th-refresh" onclick="fetchAndRenderPlayerSessions(currentActivePlayerId)" title="Refresh Sessions">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                <span>Refresh</span>
+              </button>
+              <button type="button" class="btn-th-create-team" onclick="recordNewSpellForCurrentPlayer()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span>+ Record Spell</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Recent Sessions Title -->
+          <div class="recent-sessions-header">
+            <h3>Recent Sessions</h3>
+          </div>
+
+          <!-- Session Cards Grid with Circular Checkboxes -->
+          <div class="recent-sessions-grid" id="player-sessions-grid">
+            <!-- Dynamically populated session cards with top-right checkmarks -->
+          </div>
+        </section>
+
+        <!-- ========================================================
+             FULLTRACK AI WORKFLOW VIEW 4: TEAM PLAYER DELIVERIES ANALYSIS
+        ======================================================== -->
+        <section id="view-team-analysis" class="dashboard-view-panel hidden">
+          <!-- Back button -->
+          <div class="team-analysis-back-row">
+            <button type="button" class="btn-nav-back" onclick="switchDashboardView('player-sessions')" title="Back to Sessions Selector">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            </button>
+          </div>
+
+          <!-- Analysis Blue Header Card (Screenshots 2 & 3) -->
+          <div class="team-analysis-banner-card">
+            <div class="tab-left">
+              <span class="tab-team-name" id="tab-team-title">TRAJECTA SQUAD</span>
+              <h1 class="tab-player-name" id="tab-player-title">ss</h1>
+              <div class="tab-analysis-subtitle" id="tab-analysis-subtitle">ANALYSIS (2 SESSIONS)</div>
+            </div>
+            <div class="tab-right">
+              <div class="tab-initials-badge" id="tab-player-avatar">SS</div>
+            </div>
+          </div>
+
+          <!-- Filter & Action Toolbar (Screenshots 2 & 3) -->
+          <div class="team-analysis-toolbar">
+            <div class="tat-left">
+              <!-- Player bowling / batting toggle pill -->
+              <div class="tat-role-pill" id="tat-role-pill" onclick="toggleAnalysisRolePill()" title="Toggle Role">
+                <span class="tat-role-dot"></span>
+                <span id="tat-role-label">ss is Bowling</span>
+              </div>
+
+              <!-- + Filter Button -->
+              <button type="button" class="tat-btn-filter" id="tat-btn-filter" onclick="openDeliveriesFilterModal()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                <span>+ Filter</span>
+                <span class="tat-filter-badge hidden" id="tat-filter-badge">0</span>
+              </button>
+
+              <!-- Unit toggle pill (km/h | mph) -->
+              <div class="tat-unit-toggle" id="tat-unit-toggle">
+                <button type="button" class="tat-unit-btn" id="tat-unit-kph" onclick="setTeamAnalysisSpeedUnit('kph')">km/h</button>
+                <button type="button" class="tat-unit-btn active" id="tat-unit-mph" onclick="setTeamAnalysisSpeedUnit('mph')">mph</button>
+              </div>
+            </div>
+
+            <div class="tat-right">
+              <!-- Mode Tabs: Deliveries | Graphs -->
+              <div class="tat-view-tabs">
+                <button type="button" class="tat-tab-btn active" id="tat-tab-deliveries" onclick="switchTeamAnalysisTab('deliveries')">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+                  <span>Deliveries</span>
+                </button>
+                <button type="button" class="tat-tab-btn" id="tat-tab-graphs" onclick="switchTeamAnalysisTab('graphs')">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                  <span>Graphs</span>
+                </button>
+              </div>
+
+              <!-- Reports Action Group with status (Screenshot 1) -->
+              <div class="tat-reports-group">
+                <div class="tat-reports-hint">1 saved report on file for this player. <a href="javascript:void(0)" onclick="openPreviousReportsModal()">Open Previous reports</a></div>
+                <div class="tat-reports-btn-row">
+                  <button type="button" class="tat-btn-secondary" onclick="openPreviousReportsModal()" title="View Past Reports">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <span>Previous reports</span>
+                  </button>
+                  <div class="tat-dl-container">
+                    <button type="button" class="tat-btn-download" onclick="generateAndDownloadTeamReport()" id="tat-btn-report">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                      <span>Download Report</span>
+                    </button>
+                    <span class="tat-dl-status">Ready to download</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Deliveries View Container -->
+          <div id="team-analysis-deliveries-view">
+            <!-- Header Summary Row (Screenshot 2: "101 Deliveries, 2 Sessions" & "Side-by-Side Mode") -->
+            <div class="team-analysis-summary-row">
+              <h2 class="tas-title" id="tas-deliveries-summary">0 Deliveries, 0 Sessions</h2>
+              <button type="button" class="tas-btn-sidebyside" onclick="toggleSideBySideMode()" id="tas-btn-sidebyside" title="Compare Deliveries Side by Side">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="9" height="18" rx="2"/><rect x="13" y="3" width="9" height="18" rx="2"/></svg>
+                <span>Side-by-Side Mode</span>
+              </button>
+            </div>
+
+            <!-- Accordions Container -->
+            <div class="team-accordions-list" id="team-analysis-accordions-container">
+              <!-- Dynamically rendered collapsible session accordions and delivery cards -->
+            </div>
+          </div>
+
+          <!-- Graphs View Container (Alternate Tab - Screenshots 1, 2, 3, 4) -->
+          <div id="team-analysis-graphs-view" class="hidden">
+            <!-- Top Performance Graphs Header Row -->
+            <div class="team-graphs-header-row">
+              <h2 class="tgh-title">Performance Graphs</h2>
+              <span class="tgh-count" id="tgh-deliveries-counter">0 deliveries • 0 with tracking data</span>
+            </div>
+
+            <!-- Active Region Filter Notification Banner (Screenshot 2) -->
+            <div class="tgraphs-filter-banner hidden" id="tgraphs-region-banner">
+              <div class="tfb-content">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                <span id="tgraphs-region-banner-text">Filtered by Region (0 deliveries)</span>
+              </div>
+              <button type="button" class="tfb-btn-reset" onclick="resetBeehiveRegionFilter()">Reset Filter</button>
+            </div>
+
+            <!-- SECTION 1: Performance Visualizations (Pitch Map, Beehive Chart, Release Points) -->
+            <div class="tgraphs-section-card" id="tgraphs-perf-card">
+              <div class="tgraphs-section-header">
+                <div class="tsh-left">
+                  <div class="tsh-icon tsh-icon-blue">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                  </div>
+                  <div>
+                    <h3 class="tsh-title">Performance Visualizations</h3>
+                    <p class="tsh-sub">Interactive analysis charts — one row; swipe or scroll horizontally</p>
+                  </div>
+                </div>
+                <button type="button" class="tsh-collapse-btn" onclick="toggleTGraphsSection('tgraphs-perf-body', this)" aria-label="Toggle Section">—</button>
+              </div>
+              <div class="tgraphs-section-body" id="tgraphs-perf-body">
+                <div class="tgraphs-row-scroll">
+                  <!-- Chart 1: Pitch Map -->
+                  <div class="tgraphs-chart-card">
+                    <div class="tgc-header">
+                      <h4 class="tgc-title">Pitch Map</h4>
+                      <p class="tgc-sub">Ball pitching locations and outcomes</p>
+                      <span class="tgc-hint">Drag to select region</span>
+                    </div>
+                    <div class="tgc-canvas-wrapper" id="pitch-map-wrapper">
+                      <canvas id="team-pitch-map-3d" class="tgc-3d-canvas" width="460" height="430"></canvas>
+                      <canvas id="team-pitch-map-canvas" class="tgc-overlay-canvas" width="460" height="430"></canvas>
+                    </div>
+                  </div>
+
+                  <!-- Chart 2: Beehive Chart -->
+                  <div class="tgraphs-chart-card" id="beehive-card">
+                    <div class="tgc-header">
+                      <div class="tgc-header-top">
+                        <div>
+                          <h4 class="tgc-title">Beehive Chart</h4>
+                          <p class="tgc-sub">Ball position at crease (batter's view)</p>
+                          <span class="tgc-hint">Drag to select region</span>
+                        </div>
+                        <!-- Beehive Selection Toolbar (Screenshot 2) -->
+                        <div class="beehive-selection-toolbar hidden" id="beehive-selection-toolbar">
+                          <button type="button" class="bst-btn bst-include" onclick="applyBeehiveRegionFilter('include')">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span id="bst-include-label">Include (0)</span>
+                          </button>
+                          <button type="button" class="bst-btn bst-exclude" onclick="applyBeehiveRegionFilter('exclude')">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            <span id="bst-exclude-label">Exclude (0)</span>
+                          </button>
+                          <button type="button" class="bst-btn bst-cancel" onclick="cancelBeehiveSelection()">Cancel</button>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="tgc-canvas-wrapper" id="beehive-canvas-wrapper">
+                      <canvas id="team-beehive-3d" class="tgc-3d-canvas" width="460" height="430"></canvas>
+                      <canvas id="team-beehive-canvas" class="tgc-overlay-canvas" width="460" height="430"></canvas>
+                    </div>
+                    <div class="beehive-status-bar" id="beehive-status-bar">
+                      <span id="beehive-status-text"></span>
+                    </div>
+                  </div>
+
+                  <!-- Chart 3: Release Points -->
+                  <div class="tgraphs-chart-card">
+                    <div class="tgc-header">
+                      <h4 class="tgc-title">Release Points</h4>
+                      <p class="tgc-sub">Bowling release point analysis</p>
+                      <span class="tgc-hint">Drag to select region</span>
+                    </div>
+                    <div class="tgc-canvas-wrapper" id="release-points-wrapper">
+                      <canvas id="team-release-points-3d" class="tgc-3d-canvas" width="460" height="430"></canvas>
+                      <canvas id="team-release-points-canvas" class="tgc-overlay-canvas" width="460" height="430"></canvas>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- SECTION 2: Batting Analysis (Screenshot 3) -->
+            <div class="tgraphs-section-card" id="tgraphs-batting-card">
+              <div class="tgraphs-section-header">
+                <div class="tsh-left">
+                  <div class="tsh-icon tsh-icon-orange">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg>
+                  </div>
+                  <div>
+                    <h3 class="tsh-title">Batting Analysis</h3>
+                    <p class="tsh-sub">Shot patterns and characteristics</p>
+                  </div>
+                </div>
+                <button type="button" class="tsh-collapse-btn" onclick="toggleTGraphsSection('tgraphs-batting-body', this)" aria-label="Toggle Section">—</button>
+              </div>
+              <div class="tgraphs-section-body" id="tgraphs-batting-body">
+                <div class="tgraphs-row-scroll">
+                  <!-- Chart 1: Wagon Wheel -->
+                  <div class="tgraphs-chart-card wagon-wheel-card">
+                    <div class="tgc-header">
+                      <h4 class="tgc-title">Wagon Wheel</h4>
+                      <p class="tgc-sub">Red lines denote aggressive intent, navy lines denote defensive intent.</p>
+                      <p class="tgc-sub2" id="wagon-wheel-sub2">0 of 0 deliveries with direction data - click a field sector to filter</p>
+                    </div>
+                    <div class="tgc-canvas-wrapper wagon-wheel-wrapper">
+                      <canvas id="team-wagon-wheel-canvas" width="440" height="440"></canvas>
+                    </div>
+                    <!-- Legend -->
+                    <div class="tgc-legend wagon-legend">
+                      <div class="tgl-item">
+                        <span class="tgl-dot dot-red"></span>
+                        <span class="tgl-label">Aggressive</span>
+                        <span class="tgl-val" id="ww-aggressive-stat">0 - 0.0%</span>
+                      </div>
+                      <div class="tgl-item">
+                        <span class="tgl-dot dot-navy"></span>
+                        <span class="tgl-label">Defensive</span>
+                        <span class="tgl-val" id="ww-defensive-stat">0 - 0.0%</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Chart 2: Shot Distribution Donut -->
+                  <div class="tgraphs-chart-card donut-chart-card">
+                    <div class="tgc-header">
+                      <h4 class="tgc-title">Shot Distribution</h4>
+                      <p class="tgc-sub">Percentage breakdown of shot types</p>
+                    </div>
+                    <div class="tgc-donut-wrapper">
+                      <canvas id="team-shot-dist-canvas" width="380" height="300"></canvas>
+                      <div class="donut-center-badge" id="shot-dist-center-badge">
+                        <span class="dcb-label">Total</span>
+                        <span class="dcb-val" id="shot-dist-total-count">0</span>
+                      </div>
+                    </div>
+                    <div class="donut-legend-list" id="shot-dist-legend">
+                      <!-- Rendered dynamically -->
+                    </div>
+                  </div>
+
+                  <!-- Chart 3: Footwork Distribution Donut -->
+                  <div class="tgraphs-chart-card donut-chart-card">
+                    <div class="tgc-header">
+                      <h4 class="tgc-title">Footwork Distribution</h4>
+                      <p class="tgc-sub">Front foot vs back foot vs step out frequency</p>
+                    </div>
+                    <div class="tgc-donut-wrapper">
+                      <canvas id="team-footwork-dist-canvas" width="380" height="300"></canvas>
+                      <div class="donut-center-badge" id="footwork-dist-center-badge">
+                        <span class="dcb-label">Total</span>
+                        <span class="dcb-val" id="footwork-dist-total-count">0</span>
+                      </div>
+                    </div>
+                    <div class="donut-legend-list" id="footwork-dist-legend">
+                      <!-- Rendered dynamically -->
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- SECTION 3: Advanced Batting Statistics (Screenshot 4) -->
+            <div class="tgraphs-section-card" id="tgraphs-advanced-card">
+              <div class="tgraphs-section-header">
+                <div class="tsh-left">
+                  <div class="tsh-icon tsh-icon-teal">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                  </div>
+                  <div>
+                    <h3 class="tsh-title">Advanced Batting Statistics</h3>
+                    <p class="tsh-sub">Intent, trajectory loft, and contact efficiency metrics</p>
+                  </div>
+                </div>
+                <button type="button" class="tsh-collapse-btn" onclick="toggleTGraphsSection('tgraphs-advanced-body', this)" aria-label="Toggle Section">—</button>
+              </div>
+              <div class="tgraphs-section-body" id="tgraphs-advanced-body">
+                <div class="tgraphs-row-scroll">
+                  <!-- Chart 1: Batting Intent Donut -->
+                  <div class="tgraphs-chart-card donut-chart-card">
+                    <div class="tgc-header">
+                      <h4 class="tgc-title">Batting Intent</h4>
+                      <p class="tgc-sub">Aggressive vs defensive shot breakdown</p>
+                    </div>
+                    <div class="tgc-donut-wrapper">
+                      <canvas id="team-intent-dist-canvas" width="380" height="300"></canvas>
+                      <div class="donut-center-badge" id="intent-dist-center-badge">
+                        <span class="dcb-label">Total</span>
+                        <span class="dcb-val" id="intent-dist-total-count">0</span>
+                      </div>
+                    </div>
+                    <div class="donut-legend-list" id="intent-dist-legend">
+                      <!-- Rendered dynamically -->
+                    </div>
+                  </div>
+
+                  <!-- Chart 2: Loft Distribution Donut -->
+                  <div class="tgraphs-chart-card donut-chart-card">
+                    <div class="tgc-header">
+                      <h4 class="tgc-title">Loft Distribution</h4>
+                      <p class="tgc-sub">Lofted vs grounded shot frequency</p>
+                    </div>
+                    <div class="tgc-donut-wrapper">
+                      <canvas id="team-loft-dist-canvas" width="380" height="300"></canvas>
+                      <div class="donut-center-badge" id="loft-dist-center-badge">
+                        <span class="dcb-label">Total</span>
+                        <span class="dcb-val" id="loft-dist-total-count">0</span>
+                      </div>
+                    </div>
+                    <div class="donut-legend-list" id="loft-dist-legend">
+                      <!-- Rendered dynamically -->
+                    </div>
+                  </div>
+
+                  <!-- Chart 3: Shot Outcomes Donut -->
+                  <div class="tgraphs-chart-card donut-chart-card">
+                    <div class="tgc-header">
+                      <h4 class="tgc-title">Shot Outcomes</h4>
+                      <p class="tgc-sub">Contact quality breakdown</p>
+                    </div>
+                    <div class="tgc-donut-wrapper">
+                      <canvas id="team-outcomes-dist-canvas" width="380" height="300"></canvas>
+                      <div class="donut-center-badge" id="outcomes-dist-center-badge">
+                        <span class="dcb-label">Total</span>
+                        <span class="dcb-val" id="outcomes-dist-total-count">0</span>
+                      </div>
+                    </div>
+                    <div class="donut-legend-list" id="outcomes-dist-legend">
+                      <!-- Rendered dynamically -->
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- SECTION 4: Bowling Analysis (Speed, Spin, and Swing) -->
+            <div class="tgraphs-section-card" id="tgraphs-bowling-card">
+              <div class="tgraphs-section-header">
+                <div class="tsh-left">
+                  <div class="tsh-icon tsh-icon-yellow">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 3v18h18"/><polyline points="6 15 11 9 16 13 21 6"/></svg>
+                  </div>
+                  <div>
+                    <h3 class="tsh-title">Bowling Analysis</h3>
+                    <p class="tsh-sub">Speed, spin, and swing — on small screens, adjust range above the chart</p>
+                  </div>
+                </div>
+                <button type="button" class="tsh-collapse-btn" onclick="toggleTGraphsSection('tgraphs-bowling-body', this)" aria-label="Toggle Section">—</button>
+              </div>
+              <div class="tgraphs-section-body" id="tgraphs-bowling-body">
+                
+                <!-- BLOCK 1: Speed Analysis -->
+                <div class="bowling-analysis-block" id="bowling-speed-block">
+                  <div class="bab-header">
+                    <h4 class="bab-title">Speed Analysis</h4>
+                    <p class="bab-sub">Bowling speed variation throughout sessions</p>
+                  </div>
+                  <div class="bab-main-row">
+                    <!-- Vertical Range Slider -->
+                    <div class="bab-slider-col">
+                      <div class="bab-input-box">
+                        <span class="bab-input-label">MAX</span>
+                        <div class="bab-stepper-wrap">
+                          <input type="number" id="speed-slider-max-input" class="bab-num-input" value="129" step="1" onchange="onBowlingFilterInputChange('speed', 'max', this.value)">
+                          <div class="bab-steppers">
+                            <button type="button" class="bab-step-btn" onclick="stepBowlingFilterInput('speed', 'max', 1)">▲</button>
+                            <button type="button" class="bab-step-btn" onclick="stepBowlingFilterInput('speed', 'max', -1)">▼</button>
+                          </div>
+                        </div>
+                        <span class="bab-unit-label" id="speed-slider-max-unit">km/h</span>
+                      </div>
+                      
+                      <div class="bab-vertical-slider-track" id="speed-slider-track" data-metric="speed">
+                        <div class="bab-vslider-fill" id="speed-vslider-fill"></div>
+                        <div class="bab-vslider-handle handle-max" id="speed-vslider-handle-max"></div>
+                        <div class="bab-vslider-handle handle-min" id="speed-vslider-handle-min"></div>
+                      </div>
+                      
+                      <div class="bab-input-box">
+                        <span class="bab-input-label">MIN</span>
+                        <div class="bab-stepper-wrap">
+                          <input type="number" id="speed-slider-min-input" class="bab-num-input" value="68" step="1" onchange="onBowlingFilterInputChange('speed', 'min', this.value)">
+                          <div class="bab-steppers">
+                            <button type="button" class="bab-step-btn" onclick="stepBowlingFilterInput('speed', 'min', 1)">▲</button>
+                            <button type="button" class="bab-step-btn" onclick="stepBowlingFilterInput('speed', 'min', -1)">▼</button>
+                          </div>
+                        </div>
+                        <span class="bab-unit-label" id="speed-slider-min-unit">km/h</span>
+                      </div>
+
+                      <button type="button" class="bab-reset-btn" onclick="resetBowlingMetricFilter('speed')">Reset</button>
+                    </div>
+
+                    <!-- Canvas Chart -->
+                    <div class="bab-chart-col">
+                      <canvas id="team-bowling-speed-canvas" class="bab-line-canvas" width="900" height="260"></canvas>
+                    </div>
+                  </div>
+
+                  <!-- Bottom Metrics -->
+                  <div class="bab-metrics-row">
+                    <div class="bab-metric-card">
+                      <span class="bab-metric-val val-blue" id="speed-metric-min">67.6</span>
+                      <span class="bab-metric-lbl">Min Speed (<span class="unit-speed-text">km/h</span>)</span>
+                    </div>
+                    <div class="bab-metric-card">
+                      <span class="bab-metric-val val-yellow" id="speed-metric-avg">78.6</span>
+                      <span class="bab-metric-lbl">Average (median) (<span class="unit-speed-text">km/h</span>) <span class="info-icon" title="Median release velocity across active deliveries">ⓘ</span></span>
+                    </div>
+                    <div class="bab-metric-card">
+                      <span class="bab-metric-val val-blue" id="speed-metric-max">129.0</span>
+                      <span class="bab-metric-lbl">Max Speed (<span class="unit-speed-text">km/h</span>)</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- BLOCK 2: Spin Analysis -->
+                <div class="bowling-analysis-block" id="bowling-spin-block">
+                  <div class="bab-header">
+                    <h4 class="bab-title">Spin Analysis</h4>
+                    <p class="bab-sub">Spin rate and direction patterns</p>
+                  </div>
+                  <div class="bab-main-row">
+                    <!-- Vertical Range Slider -->
+                    <div class="bab-slider-col">
+                      <div class="bab-input-box">
+                        <span class="bab-input-label">MAX</span>
+                        <div class="bab-stepper-wrap">
+                          <input type="number" id="spin-slider-max-input" class="bab-num-input" value="8.6" step="0.1" onchange="onBowlingFilterInputChange('spin', 'max', this.value)">
+                          <div class="bab-steppers">
+                            <button type="button" class="bab-step-btn" onclick="stepBowlingFilterInput('spin', 'max', 0.5)">▲</button>
+                            <button type="button" class="bab-step-btn" onclick="stepBowlingFilterInput('spin', 'max', -0.5)">▼</button>
+                          </div>
+                        </div>
+                        <span class="bab-unit-label">°</span>
+                      </div>
+
+                      <div class="bab-vertical-slider-track" id="spin-slider-track" data-metric="spin">
+                        <div class="bab-vslider-fill" id="spin-vslider-fill"></div>
+                        <div class="bab-vslider-handle handle-max" id="spin-vslider-handle-max"></div>
+                        <div class="bab-vslider-handle handle-min" id="spin-vslider-handle-min"></div>
+                      </div>
+
+                      <div class="bab-input-box">
+                        <span class="bab-input-label">MIN</span>
+                        <div class="bab-stepper-wrap">
+                          <input type="number" id="spin-slider-min-input" class="bab-num-input" value="0.2" step="0.1" onchange="onBowlingFilterInputChange('spin', 'min', this.value)">
+                          <div class="bab-steppers">
+                            <button type="button" class="bab-step-btn" onclick="stepBowlingFilterInput('spin', 'min', 0.5)">▲</button>
+                            <button type="button" class="bab-step-btn" onclick="stepBowlingFilterInput('spin', 'min', -0.5)">▼</button>
+                          </div>
+                        </div>
+                        <span class="bab-unit-label">°</span>
+                      </div>
+
+                      <button type="button" class="bab-reset-btn" onclick="resetBowlingMetricFilter('spin')">Reset</button>
+                    </div>
+
+                    <!-- Canvas Chart with Legend -->
+                    <div class="bab-chart-col">
+                      <div class="bab-chart-legend">
+                        <div class="bcl-item"><span class="bcl-dot dot-green"></span><span>Right spin</span></div>
+                        <div class="bcl-item"><span class="bcl-dot dot-red"></span><span>Left spin</span></div>
+                        <div class="bcl-item"><span class="bcl-dot dot-gray"></span><span>No movement</span></div>
+                      </div>
+                      <canvas id="team-bowling-spin-canvas" class="bab-line-canvas" width="900" height="260"></canvas>
+                    </div>
+                  </div>
+
+                  <!-- Bottom Metrics -->
+                  <div class="bab-metrics-row">
+                    <div class="bab-metric-card">
+                      <span class="bab-metric-val val-purple" id="spin-metric-min">1.8°</span>
+                      <span class="bab-metric-lbl">Min Spin</span>
+                    </div>
+                    <div class="bab-metric-card">
+                      <span class="bab-metric-val val-yellow" id="spin-metric-avg">5.2°</span>
+                      <span class="bab-metric-lbl">Average (median) <span class="info-icon" title="Median angular deviation across active deliveries">ⓘ</span></span>
+                    </div>
+                    <div class="bab-metric-card">
+                      <span class="bab-metric-val val-purple" id="spin-metric-max">8.8°</span>
+                      <span class="bab-metric-lbl">Max Spin</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- BLOCK 3: Swing Analysis -->
+                <div class="bowling-analysis-block" id="bowling-swing-block">
+                  <div class="bab-header bab-header-with-btn">
+                    <div>
+                      <h4 class="bab-title">Swing Analysis</h4>
+                      <p class="bab-sub">Ball movement through the air</p>
+                    </div>
+                    <button type="button" class="bab-info-pill-btn" onclick="openSwingForceModal()">
+                      What is Swing Force? ⓘ
+                    </button>
+                  </div>
+                  <div class="bab-main-row">
+                    <!-- Vertical Range Slider -->
+                    <div class="bab-slider-col">
+                      <div class="bab-input-box">
+                        <span class="bab-input-label">MAX</span>
+                        <div class="bab-stepper-wrap">
+                          <input type="number" id="swing-slider-max-input" class="bab-num-input" value="2.7" step="0.1" onchange="onBowlingFilterInputChange('swing', 'max', this.value)">
+                          <div class="bab-steppers">
+                            <button type="button" class="bab-step-btn" onclick="stepBowlingFilterInput('swing', 'max', 0.2)">▲</button>
+                            <button type="button" class="bab-step-btn" onclick="stepBowlingFilterInput('swing', 'max', -0.2)">▼</button>
+                          </div>
+                        </div>
+                        <span class="bab-unit-label">SF</span>
+                      </div>
+
+                      <div class="bab-vertical-slider-track" id="swing-slider-track" data-metric="swing">
+                        <div class="bab-vslider-fill" id="swing-vslider-fill"></div>
+                        <div class="bab-vslider-handle handle-max" id="swing-vslider-handle-max"></div>
+                        <div class="bab-vslider-handle handle-min" id="swing-vslider-handle-min"></div>
+                      </div>
+
+                      <div class="bab-input-box">
+                        <span class="bab-input-label">MIN</span>
+                        <div class="bab-stepper-wrap">
+                          <input type="number" id="swing-slider-min-input" class="bab-num-input" value="0.1" step="0.1" onchange="onBowlingFilterInputChange('swing', 'min', this.value)">
+                          <div class="bab-steppers">
+                            <button type="button" class="bab-step-btn" onclick="stepBowlingFilterInput('swing', 'min', 0.2)">▲</button>
+                            <button type="button" class="bab-step-btn" onclick="stepBowlingFilterInput('swing', 'min', -0.2)">▼</button>
+                          </div>
+                        </div>
+                        <span class="bab-unit-label">SF</span>
+                      </div>
+
+                      <button type="button" class="bab-reset-btn" onclick="resetBowlingMetricFilter('swing')">Reset</button>
+                    </div>
+
+                    <!-- Canvas Chart with Legend -->
+                    <div class="bab-chart-col">
+                      <div class="bab-chart-legend">
+                        <div class="bcl-item"><span class="bcl-dot dot-navy"></span><span>Right swing</span></div>
+                        <div class="bcl-item"><span class="bcl-dot dot-orange"></span><span>Left swing</span></div>
+                        <div class="bcl-item"><span class="bcl-dot dot-gray"></span><span>No movement</span></div>
+                      </div>
+                      <canvas id="team-bowling-swing-canvas" class="bab-line-canvas" width="900" height="260"></canvas>
+                    </div>
+                  </div>
+
+                  <!-- Bottom Metrics -->
+                  <div class="bab-metrics-row">
+                    <div class="bab-metric-card">
+                      <span class="bab-metric-val val-orange" id="swing-metric-min">0.1</span>
+                      <span class="bab-metric-lbl">Min Swing Force</span>
+                    </div>
+                    <div class="bab-metric-card">
+                      <span class="bab-metric-val val-yellow" id="swing-metric-avg">0.9</span>
+                      <span class="bab-metric-lbl">Average (median) <span class="info-icon" title="Median lateral aerodynamic deviation across active deliveries">ⓘ</span></span>
+                    </div>
+                    <div class="bab-metric-card">
+                      <span class="bab-metric-val val-orange" id="swing-metric-max">1.5</span>
+                      <span class="bab-metric-lbl">Max Swing Force</span>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </section>
 
         <!-- ========================================================
              VIEW PANEL 1: COMMAND CENTER & BOWLING INSIGHTS
@@ -541,16 +1275,6 @@
             <input type="hidden" id="hero-target-balls-val" value="5" />
           </div>
 
-          <div class="form-item">
-            <label for="hero-pitch-wickets">Pitch Wickets Setup</label>
-            <div class="select-box-wrap">
-              <select id="hero-pitch-wickets" class="input-light select-light" onchange="onHeroWicketsSelectChange(this.value)">
-                <option value="true" selected>Physical Wickets Present (Auto AI Detection)</option>
-                <option value="false">No Wickets (Manual Batsman Stumps Calibration)</option>
-              </select>
-            </div>
-            <p id="hero-wickets-hint" class="input-hint-sub">Pitch has visible stumps. Trajectory is calibrated automatically via AI stumps detection.</p>
-          </div>
 
           <div class="hero-action-row">
             <button type="submit" class="btn-start-spell">
@@ -591,7 +1315,6 @@
             <div class="meta-row-1">
               <h3 id="session-display-bowler">Jasprit Bumrah</h3>
               <span id="session-display-style" class="badge-tag-style">Right-arm Fast</span>
-              <span id="session-display-wickets" class="badge-tag-style badge-wicket-style">Physical Wickets</span>
               <button type="button" class="btn-bowler-edit-inline" onclick="openEditBowlerModal(event)" title="Edit Bowler &amp; Spell Details">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -684,40 +1407,6 @@
               <video id="trim-preview-video" playsinline muted preload="auto"></video>
               <div class="trim-time-badge" id="trim-playhead-time">00:00.0 / 00:00.0</div>
               <button type="button" class="btn-trim-play" id="trim-play-btn" onclick="toggleTrimVideoPlay()">Play</button>
-
-              <!-- Manual Wicket Calibration Overlay -->
-              <div id="manual-wicket-overlay" class="manual-wicket-overlay hidden" onpointerdown="onWicketOverlayPointerDown(event)">
-                <!-- Projected Pitch Guide Lines -->
-                <svg id="wicket-pitch-guide" class="wicket-pitch-guide" preserveAspectRatio="none">
-                  <polygon id="guide-pitch-poly" class="guide-pitch-poly" points="0,0 0,0 0,0 0,0" />
-                  <line id="guide-pitch-center" class="guide-pitch-center" x1="0" y1="0" x2="0" y2="0" />
-                  <line id="guide-pitch-crease" class="guide-pitch-crease" x1="0" y1="0" x2="0" y2="0" />
-                  <line id="guide-popping-crease" class="guide-popping-crease" x1="0" y1="0" x2="0" y2="0" />
-                </svg>
-
-                <!-- Interactive Draggable Wicket Marker -->
-                <div id="wicket-marker" class="wicket-marker" onpointerdown="onWicketMarkerPointerDown(event)">
-                  <div class="wicket-marker-badge">
-                    <span class="marker-dot"></span>
-                    <span class="marker-lbl">BATSMAN WICKETS</span>
-                  </div>
-                  <div class="wicket-stumps-graphic">
-                    <svg width="42" height="68" viewBox="0 0 42 68">
-                      <!-- Bails -->
-                      <rect x="3" y="3" width="16" height="3" rx="1.5" fill="#ffd13b" stroke="#111" stroke-width="0.7"/>
-                      <rect x="23" y="3" width="16" height="3" rx="1.5" fill="#ffd13b" stroke="#111" stroke-width="0.7"/>
-                      <!-- Off, Middle, Leg Stumps -->
-                      <rect x="5" y="6" width="6" height="58" rx="2" fill="#151515" stroke="#00eb78" stroke-width="1.2"/>
-                      <rect x="18" y="6" width="6" height="58" rx="2" fill="#151515" stroke="#00eb78" stroke-width="1.2"/>
-                      <rect x="31" y="6" width="6" height="58" rx="2" fill="#151515" stroke="#00eb78" stroke-width="1.2"/>
-                      <!-- Ground Base Crosshair -->
-                      <circle cx="21" cy="64" r="4.5" fill="#00eb78" stroke="#ffffff" stroke-width="1.5"/>
-                      <line x1="9" y1="64" x2="33" y2="64" stroke="#00eb78" stroke-width="2"/>
-                    </svg>
-                  </div>
-                  <span class="marker-sub">Drag / Click to Position</span>
-                </div>
-              </div>
             </div>
 
             <!-- Scrubber Track -->
@@ -751,75 +1440,7 @@
               </div>
             </div>
 
-            <!-- WICKET CALIBRATION & PERSPECTIVE (Active when session has no physical wickets) -->
-            <div id="wicket-calib-card" class="wicket-calib-card hidden">
-              <div class="wicket-calib-header">
-                <div class="wicket-calib-title-wrap">
-                  <span class="wicket-calib-badge">NO WICKETS SESSION &middot; BATSMAN CALIBRATION</span>
-                  <h5 id="wicket-calib-heading">Batsman End Wicket Setup</h5>
-                  <p class="wicket-calib-guide-text">Position the batsman stumps on frame 0/1 of the video to calibrate pitch geometry &amp; 3D ball trajectory.</p>
-                </div>
-              </div>
 
-              <!-- Locked session calibration notification banner (revealed when previous video calibrated) -->
-              <div id="locked-session-calib-banner" class="locked-calib-banner hidden">
-                <div class="locked-banner-icon">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00eb78" stroke-width="2.2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                </div>
-                <div class="locked-banner-text">
-                  <span class="locked-title">Batsman Wicket Locked from Delivery 1</span>
-                  <span class="locked-sub">Applied to all videos in this spell. Using fixed pitch coordinates.</span>
-                </div>
-                <div class="locked-banner-actions">
-                  <button type="button" class="btn-locked-action" onclick="editLockedCalibration()">Adjust Wicket</button>
-                  <button type="button" class="btn-locked-action text-danger" onclick="clearLockedCalibration()">Reset</button>
-                </div>
-              </div>
-
-              <!-- Manual Positioning Controls -->
-              <div id="manual-calib-panel" class="manual-calib-panel">
-                <p class="manual-hint">Click or drag the green batsman stumps directly on the video frame above to position.</p>
-
-                <div class="manual-controls-row">
-                  <div class="manual-pos-nudge-group">
-                    <span class="ctrl-sublabel">Fine-tune Position:</span>
-                    <div class="nudge-btn-grid">
-                      <button type="button" class="btn-nudge" onclick="nudgeWicket(0, -2)" title="Nudge Up">&uarr;</button>
-                      <button type="button" class="btn-nudge" onclick="nudgeWicket(-2, 0)" title="Nudge Left">&larr;</button>
-                      <button type="button" class="btn-nudge center-btn" onclick="resetWicketToDefault()" title="Center Pitch">&bull;</button>
-                      <button type="button" class="btn-nudge" onclick="nudgeWicket(2, 0)" title="Nudge Right">&rarr;</button>
-                      <button type="button" class="btn-nudge" onclick="nudgeWicket(0, 2)" title="Nudge Down">&darr;</button>
-                    </div>
-                  </div>
-
-                  <div class="manual-scale-group">
-                    <span class="ctrl-sublabel">Wicket Scale:</span>
-                    <div class="scale-btn-group">
-                      <button type="button" class="btn-scale" onclick="scaleWicket(-0.1)" title="Smaller">-</button>
-                      <span id="wicket-scale-val" class="scale-readout">1.0x</span>
-                      <button type="button" class="btn-scale" onclick="scaleWicket(0.1)" title="Larger">+</button>
-                    </div>
-                  </div>
-
-                  <div class="manual-readout">
-                    <span class="ctrl-sublabel">Base Contact:</span>
-                    <span id="wicket-coords-readout" class="coords-val">X: 50.0% &middot; Y: 46.5%</span>
-                  </div>
-                </div>
-
-                <!-- Apply to all videos checkbox -->
-                <div class="apply-to-all-row">
-                  <label class="custom-checkbox-wrap">
-                    <input type="checkbox" id="chk-apply-to-all" checked>
-                    <span class="checkbox-box"></span>
-                    <span class="checkbox-text">
-                      <strong>Apply batsman wicket to all videos in this spell / session</strong>
-                      <span class="checkbox-sub">Automatically position wickets in subsequent videos (Delivery 2, 3, etc.)</span>
-                    </span>
-                  </label>
-                </div>
-              </div>
-            </div>
 
             <div class="trim-actions-row">
               <button type="button" class="btn-preview-window" onclick="playTrimPreview()">
@@ -939,7 +1560,11 @@
             <h3>Overall Session Performance & Multi-Ball Hawk-Eye</h3>
             <p class="banner-sub">Complete spell metrics: mixed pitch map, continuous flight trajectories, release points analysis, side elevation view & pace variance.</p>
           </div>
-          <div class="banner-actions">
+          <div class="banner-actions" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <button type="button" class="btn-compile-highlight" id="btn-compile-highlight" onclick="compileHighlightReel()" title="Compile Tracked Deliveries into Highlight Reel MP4">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+              <span>Export Highlight Reel &amp; Share</span>
+            </button>
             <button type="button" class="btn-launch-multiball-3d" onclick="launchMultiBall3DStadium()">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
               <span>Multi-Ball 3D Stadium DRS</span>
@@ -948,6 +1573,24 @@
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
               <span>Print / Save Report</span>
             </button>
+          </div>
+        </div>
+
+        <!-- Multi-Session Cross-Analysis Filter Toolbar -->
+        <div class="multi-session-bar" id="multi-session-bar">
+          <div class="multi-session-header">
+            <div class="multi-session-title">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+              <span>Multi-Spell Comparison &amp; Global Review</span>
+            </div>
+            <div class="multi-session-actions">
+              <button type="button" class="btn-select-all-sessions active" id="btn-toggle-all-sessions" onclick="toggleSelectAllSessions()">
+                <span>✓ All Sessions</span>
+              </button>
+            </div>
+          </div>
+          <div class="multi-session-pills-wrap" id="multi-session-pills-container">
+            <!-- Dynamically populated session pills -->
           </div>
         </div>
 
@@ -1433,13 +2076,6 @@
           <input type="hidden" id="edit-target-balls-val" value="5" />
         </div>
 
-        <div class="form-group-modal">
-          <label for="edit-pitch-wickets">Pitch Wickets Setup</label>
-          <select id="edit-pitch-wickets" class="modal-input modal-select">
-            <option value="true">Physical Wickets Present (Auto AI Detection)</option>
-            <option value="false">No Wickets (Manual Batsman Stumps Calibration)</option>
-          </select>
-        </div>
 
         <div class="modal-footer-actions">
           <button type="button" class="btn-modal-cancel" onclick="closeEditBowlerModal()">Cancel</button>
@@ -1448,6 +2084,485 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- HIGHLIGHT REEL & SOCIAL SHARING MODAL -->
+  <div id="highlight-reel-modal" class="custom-modal-backdrop hidden" onclick="if(event.target===this) closeHighlightReelModal()">
+    <div class="highlight-modal-card">
+      <div class="highlight-modal-header">
+        <div class="highlight-title-wrap">
+          <span class="highlight-badge">BROADCAST REEL READY</span>
+          <h3 id="highlight-reel-title">Spell Highlight Compilation</h3>
+          <p class="highlight-sub" id="highlight-reel-sub">Continuous mixed delivery reel generated with full AI telemetry.</p>
+        </div>
+        <button type="button" class="btn-close-modal" onclick="closeHighlightReelModal()">&times;</button>
+      </div>
+
+      <div class="highlight-video-container">
+        <video id="highlight-reel-video" class="highlight-video-player" controls playsinline></video>
+        <div id="highlight-reel-loading" class="highlight-loading-overlay hidden">
+          <div class="spinner-ring"></div>
+          <p class="loading-label">Stitching delivery videos with FFmpeg...</p>
+        </div>
+      </div>
+
+      <!-- Telemetry Summary Strip -->
+      <div class="highlight-telemetry-strip" id="highlight-telemetry-strip">
+        <div class="strip-item">
+          <span class="strip-label">BOWLER</span>
+          <span class="strip-val" id="reel-bowler-name">Bowler</span>
+        </div>
+        <div class="strip-item">
+          <span class="strip-label">BALLS MIXED</span>
+          <span class="strip-val text-red" id="reel-balls-count">0</span>
+        </div>
+        <div class="strip-item">
+          <span class="strip-label">AVG SPEED</span>
+          <span class="strip-val text-blue" id="reel-avg-speed">0.0 mph</span>
+        </div>
+        <div class="strip-item">
+          <span class="strip-label">TOP SPEED</span>
+          <span class="strip-val text-green" id="reel-max-speed">0.0 mph</span>
+        </div>
+      </div>
+
+      <!-- Social Sharing Options -->
+      <div class="social-share-section">
+        <h4 class="share-section-heading">Share Tracked Spell</h4>
+        <div class="social-share-grid">
+          <!-- WhatsApp -->
+          <button type="button" class="btn-social-share share-whatsapp" onclick="shareReelToWhatsApp()" title="Share on WhatsApp">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2m.01 1.67c2.2 0 4.26.86 5.82 2.42a8.225 8.225 0 0 1 2.41 5.83c0 4.54-3.7 8.24-8.24 8.24-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.196 8.196 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24m4.52 11.66c-.25-.13-1.47-.72-1.7-.81-.23-.08-.4-.13-.57.13-.17.25-.65.81-.8 1-.15.18-.3.2-.55.08-.25-.13-1.06-.39-2.02-1.24-.75-.67-1.25-1.49-1.4-1.74-.15-.25-.02-.39.11-.51.11-.11.25-.3.38-.45.12-.15.17-.25.25-.42.08-.17.04-.32-.02-.45-.06-.13-.57-1.37-.78-1.87-.2-.5-.41-.43-.57-.44h-.49c-.17 0-.44.06-.67.32-.23.25-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.13.17 1.78 2.71 4.3 3.8 2.53 1.09 2.53.73 2.99.69.45-.04 1.47-.6 1.68-1.18.21-.58.21-1.08.15-1.18-.06-.1-.23-.17-.48-.29z"/></svg>
+            <span>WhatsApp</span>
+          </button>
+          <!-- X (Twitter) -->
+          <button type="button" class="btn-social-share share-x" onclick="shareReelToX()" title="Share on X / Twitter">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            <span>Post to X</span>
+          </button>
+          <!-- Instagram Reels / Stories -->
+          <button type="button" class="btn-social-share share-instagram" onclick="copyReelCaptionForInstagram()" title="Copy Caption & Download for Instagram">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+            <span>Instagram</span>
+          </button>
+          <!-- YouTube Shorts -->
+          <button type="button" class="btn-social-share share-youtube" onclick="copyReelCaptionForYouTube()" title="Copy Title & Tags for YouTube Shorts">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+            <span>YouTube</span>
+          </button>
+        </div>
+
+        <!-- Copy link, Open player & Download direct buttons -->
+        <div class="share-modal-bottom-actions">
+          <button type="button" class="btn-copy-share-link" onclick="copyReelVideoLink()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            <span id="copy-share-link-text">Copy Reel Link</span>
+          </button>
+          <a id="btn-open-highlight-reel" class="btn-copy-share-link" href="#" target="_blank" style="text-decoration:none;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            <span>Open Reel Page</span>
+          </a>
+          <a id="btn-download-highlight-reel" class="btn-download-reel-file" href="#" download>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Download Video</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DELETE SESSION CONFIRMATION MODAL -->
+  <div id="delete-session-modal" class="custom-modal-backdrop hidden" onclick="if(event.target===this) closeDeleteSessionModal()">
+    <div class="delete-modal-card">
+      <div class="delete-modal-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      </div>
+      <h3 class="delete-modal-title">Delete Bowling Spell?</h3>
+      <p class="delete-modal-desc" id="delete-session-prompt">Are you sure you want to delete this session? All tracked deliveries and telemetry records will be permanently removed.</p>
+      <div class="delete-modal-actions">
+        <button type="button" class="btn-modal-cancel" onclick="closeDeleteSessionModal()">Cancel</button>
+        <button type="button" class="btn-modal-confirm-delete" id="btn-confirm-delete-session" onclick="executeDeleteSession()">
+          <span>Yes, Delete Spell</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       WORKSPACE PORTAL SELECTION MODAL (Player vs Team)
+  ======================================================== -->
+  <div id="mode-selection-modal" class="custom-modal-backdrop hidden" onclick="if(event.target===this) closeModeSelectionModal()">
+    <div class="mode-portal-modal-card">
+      <div class="mode-portal-header">
+        <span class="mode-portal-badge">TRAJECTA AI · TRAINING PORTALS</span>
+        <h2 class="mode-portal-title">Select Your Training Mode</h2>
+        <p class="mode-portal-subtitle">Choose how you want to analyze deliveries and review sessions today.</p>
+      </div>
+
+      <div class="mode-portal-grid">
+        <!-- Option 1: Solo Player Workflow -->
+        <div class="mode-card" onclick="selectWorkspaceMode('player')">
+          <div class="mode-card-icon-wrap icon-player">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <div class="mode-card-badge-row">
+            <span class="mode-pill-classic">Classic Direct Flow</span>
+          </div>
+          <h3 class="mode-card-title">Individual Player</h3>
+          <p class="mode-card-desc">Personal bowling session training. Direct access to the Command Center, instant ball-by-ball video tracking, and your personal 3D DRS Pitch.</p>
+          <ul class="mode-card-points">
+            <li><span>✓</span> Direct Spell Recording &amp; Video Upload</li>
+            <li><span>✓</span> Left Sidebar Dashboard Active</li>
+            <li><span>✓</span> Personal Bowler Profile &amp; Speed Radar</li>
+          </ul>
+          <button type="button" class="btn-mode-select">Continue as Solo Player &rarr;</button>
+        </div>
+
+        <!-- Option 2: Team & Academy Hub (Fulltrack AI Workflow) -->
+        <div class="mode-card mode-card-highlight" onclick="selectWorkspaceMode('team')">
+          <div class="mode-card-tag-featured">Fulltrack AI Hierarchy</div>
+          <div class="mode-card-icon-wrap icon-team">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div class="mode-card-badge-row">
+            <span class="mode-pill-team">Squad &amp; Academy Hub</span>
+          </div>
+          <h3 class="mode-card-title">Team &amp; Academy Hub</h3>
+          <p class="mode-card-desc">Squad management system. Browse teams, select squad players, multi-select practice sessions with checkboxes, and run deep team analytics.</p>
+          <ul class="mode-card-points">
+            <li><span>✓</span> "Your Teams" Hub (TRAJECTA Squad, etc.)</li>
+            <li><span>✓</span> Player Rosters with Roles &amp; Styles</li>
+            <li><span>✓</span> Checkbox Multi-Session Selection &amp; Analysis</li>
+          </ul>
+          <button type="button" class="btn-mode-select btn-mode-accent">Enter Team Hub &rarr;</button>
+        </div>
+      </div>
+      <div class="mode-portal-footer">
+        <label class="remember-choice-label">
+          <input type="checkbox" id="remember-mode-preference" checked />
+          <span>Remember my choice for future visits (can switch anytime via topbar)</span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- NEW TEAM MODAL -->
+  <div id="new-team-modal" class="custom-modal-backdrop hidden" onclick="if(event.target===this) closeNewTeamModal()">
+    <div class="new-entity-modal-card">
+      <div class="new-entity-header">
+        <h3>Create New Team</h3>
+        <button type="button" class="btn-close-modal" onclick="closeNewTeamModal()">&times;</button>
+      </div>
+      <form id="new-team-form" onsubmit="event.preventDefault(); submitCreateTeam();">
+        <div class="form-group-field">
+          <label for="new-team-name-input">Team Name *</label>
+          <input type="text" id="new-team-name-input" class="input-light" placeholder="e.g. TRAJECTA Elite, Mumbai Ranji Squad" required />
+        </div>
+        <div class="form-group-field">
+          <label for="new-team-desc-input">Description / Academy Note</label>
+          <input type="text" id="new-team-desc-input" class="input-light" placeholder="e.g. High Performance Camp" />
+        </div>
+        <div class="entity-modal-actions">
+          <button type="button" class="btn-modal-cancel" onclick="closeNewTeamModal()">Cancel</button>
+          <button type="submit" class="btn-modal-submit">Create Team</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- NEW PLAYER MODAL -->
+  <div id="new-player-modal" class="custom-modal-backdrop hidden" onclick="if(event.target===this) closeNewPlayerModal()">
+    <div class="new-entity-modal-card">
+      <div class="new-entity-header">
+        <h3>Add Player to Squad</h3>
+        <button type="button" class="btn-close-modal" onclick="closeNewPlayerModal()">&times;</button>
+      </div>
+      <form id="new-player-form" onsubmit="event.preventDefault(); submitCreatePlayer();">
+        <div class="form-group-field">
+          <label for="new-player-name-input">Player Name *</label>
+          <input type="text" id="new-player-name-input" class="input-light" placeholder="e.g. Trial Player 5" required />
+        </div>
+        <div class="form-grid-2">
+          <div class="form-group-field">
+            <label for="new-player-role-input">Player Role</label>
+            <select id="new-player-role-input" class="input-light select-light">
+              <option value="All-rounder" selected>All-rounder</option>
+              <option value="Fast Bowler">Fast Bowler</option>
+              <option value="Medium Pacer">Medium Pacer</option>
+              <option value="Spin Bowler">Spin Bowler</option>
+              <option value="Batter">Batter</option>
+            </select>
+          </div>
+          <div class="form-group-field">
+            <label for="new-player-batting-input">Batting Style</label>
+            <select id="new-player-batting-input" class="input-light select-light">
+              <option value="Right" selected>Right Hand</option>
+              <option value="Left">Left Hand</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group-field">
+          <label for="new-player-bowling-input">Bowling Style</label>
+          <select id="new-player-bowling-input" class="input-light select-light">
+            <option value="Right Medium" selected>Right Medium</option>
+            <option value="Right-arm Fast">Right-arm Fast</option>
+            <option value="Left-arm Fast">Left-arm Fast</option>
+            <option value="Right-arm Off-Spin">Right-arm Off-Spin</option>
+            <option value="Right-arm Leg-Spin">Right-arm Leg-Spin</option>
+            <option value="Left-arm Orthodox">Left-arm Orthodox</option>
+          </select>
+        </div>
+        <div class="form-group-checkbox">
+          <label>
+            <input type="checkbox" id="new-player-is-admin" />
+            <span>Mark as Admin / Captain</span>
+          </label>
+        </div>
+        <div class="entity-modal-actions">
+          <button type="button" class="btn-modal-cancel" onclick="closeNewPlayerModal()">Cancel</button>
+          <button type="submit" class="btn-modal-submit">Add to Squad</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       FULLSCREEN DELIVERY VIDEO PLAYER MODAL (Screenshot 5)
+  ======================================================== -->
+  <div id="modal-delivery-player" class="delivery-player-fullscreen-modal hidden">
+    <!-- Top Bar -->
+    <div class="dpm-topbar">
+      <div class="dpm-topbar-left">
+        <h2 class="dpm-title" id="dpm-delivery-title">Delivery 1 of 10</h2>
+        <p class="dpm-subtext">← → step frames • use chevrons on video to switch delivery</p>
+      </div>
+      <div class="dpm-topbar-right">
+        <button type="button" class="dpm-icon-btn" id="dpm-audio-btn" onclick="toggleDeliveryPlayerMute()" title="Toggle Sound">
+          <svg id="dpm-audio-icon-unmuted" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+          <svg id="dpm-audio-icon-muted" class="hidden" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+        </button>
+        <button type="button" class="dpm-icon-btn dpm-close-btn" onclick="closeDeliveryPlayerModal()" title="Close Player (Esc)">
+          &times;
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Player Stage -->
+    <div class="dpm-stage">
+      <!-- Floating Telemetry HUD Cards (Left) -->
+      <div class="dpm-hud-container">
+        <!-- SPEED CARD -->
+        <div class="dpm-hud-card">
+          <div class="dpm-hud-header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
+            <span class="dpm-hud-label">SPEED</span>
+          </div>
+          <div class="dpm-hud-speed-row">
+            <span class="dpm-hud-speed-val" id="dpm-speed-value">96.0</span>
+            <div class="dpm-hud-unit-pill">
+              <button type="button" class="dpm-unit-pill-btn" id="dpm-hud-unit-kph" onclick="setDeliveryPlayerSpeedUnit('kph')">km/h</button>
+              <button type="button" class="dpm-unit-pill-btn active" id="dpm-hud-unit-mph" onclick="setDeliveryPlayerSpeedUnit('mph')">mph</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- SPIN CARD -->
+        <div class="dpm-hud-card">
+          <div class="dpm-hud-header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+            <span class="dpm-hud-label">SPIN</span>
+          </div>
+          <div class="dpm-hud-stat-row">
+            <span class="dpm-hud-stat-val" id="dpm-spin-value">2.1</span>
+            <span class="dpm-hud-stat-unit">degrees</span>
+          </div>
+        </div>
+
+        <!-- SWING FORCE CARD -->
+        <div class="dpm-hud-card">
+          <div class="dpm-hud-header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2"><polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg>
+            <span class="dpm-hud-label">SWING FORCE</span>
+          </div>
+          <div class="dpm-hud-stat-row">
+            <span class="dpm-hud-stat-val" id="dpm-swing-value">0.9</span>
+            <span class="dpm-hud-stat-unit">SF</span>
+          </div>
+        </div>
+
+        <!-- LENGTH & LINE CARD -->
+        <div class="dpm-hud-card dpm-hud-length-card">
+          <div class="dpm-hud-header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg>
+            <span class="dpm-hud-label">PITCH CORRIDOR</span>
+          </div>
+          <div class="dpm-hud-length-val" id="dpm-length-line-value">Good Length • Outside Off</div>
+          <div class="dpm-hud-length-sub" id="dpm-crease-distance-value">6.26m from stumps</div>
+        </div>
+      </div>
+
+      <!-- Center Video Player Container -->
+      <div class="dpm-video-wrapper" id="dpm-video-wrapper">
+        <video id="dpm-video-element" playsinline loop preload="auto"></video>
+
+        <!-- Previous Delivery Chevron Button (Left) -->
+        <button type="button" class="dpm-chevron-btn dpm-chevron-prev" id="dpm-btn-prev" onclick="goToPreviousDelivery()" title="Previous Ball (←)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+
+        <!-- Next Delivery Chevron Button (Right) -->
+        <button type="button" class="dpm-chevron-btn dpm-chevron-next" id="dpm-btn-next" onclick="goToNextDelivery()" title="Next Ball (→)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+
+        <!-- Floating Action Icons (Right Edge) -->
+        <div class="dpm-floating-actions">
+          <button type="button" class="dpm-floating-icon-btn" onclick="openDeliveryNotesPopup()" title="Delivery Notes & Feedback">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </button>
+          <button type="button" class="dpm-floating-icon-btn" id="dpm-btn-download" onclick="downloadCurrentDeliveryVideo()" title="Download MP4">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </button>
+        </div>
+
+        <!-- Bottom Video Controls Bar -->
+        <div class="dpm-video-controls">
+          <button type="button" class="dpm-ctrl-btn" id="dpm-btn-playpause" onclick="toggleDeliveryPlayerPlayPause()" title="Play/Pause (Space)">
+            <svg id="dpm-icon-play" class="hidden" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            <svg id="dpm-icon-pause" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+          </button>
+          <span class="dpm-time-label" id="dpm-time-display">0:00 / 0:03</span>
+          <div class="dpm-seek-bar-wrap">
+            <input type="range" id="dpm-seek-slider" min="0" max="100" value="0" step="0.1" oninput="onDeliverySeekInput(this.value)" />
+          </div>
+          <button type="button" class="dpm-ctrl-btn" onclick="toggleDeliveryPlayerMute()" title="Mute/Unmute">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+          </button>
+          <button type="button" class="dpm-ctrl-btn" onclick="toggleDeliveryFullscreen()" title="Fullscreen">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Footer Hints -->
+    <div class="dpm-footer">
+      <span>Left/Right: Navigate balls • Space: Play/Pause • Esc: Close</span>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       DELIVERY FILTERS MODAL (Screenshot 4)
+  ======================================================== -->
+  <div id="modal-deliveries-filter" class="custom-modal-backdrop hidden" onclick="if(event.target===this) closeDeliveriesFilterModal()">
+    <div class="deliveries-filter-modal-card">
+      <div class="dfm-header">
+        <div class="dfm-title-box">
+          <h3 class="dfm-title">Player Attributes</h3>
+          <p class="dfm-sub">Select a filter to configure</p>
+        </div>
+        <button type="button" class="dfm-close-btn" onclick="closeDeliveriesFilterModal()">&times;</button>
+      </div>
+
+      <!-- Filter Pagination Indicator -->
+      <div class="dfm-dots">
+        <span class="dfm-dot active"></span>
+        <span class="dfm-dot"></span>
+        <span class="dfm-dot"></span>
+      </div>
+
+      <div class="dfm-body">
+        <!-- Pitch Length Filter -->
+        <div class="dfm-section">
+          <label class="dfm-section-label">Pitch Length Corridor</label>
+          <div class="dfm-chips-grid" id="dfm-chips-length">
+            <button type="button" class="dfm-chip active" data-filter="length" data-value="all" onclick="selectFilterChip(this)">All Lengths</button>
+            <button type="button" class="dfm-chip" data-filter="length" data-value="Good Length" onclick="selectFilterChip(this)">Good Length</button>
+            <button type="button" class="dfm-chip" data-filter="length" data-value="Full Length" onclick="selectFilterChip(this)">Full Length</button>
+            <button type="button" class="dfm-chip" data-filter="length" data-value="Yorker" onclick="selectFilterChip(this)">Yorker</button>
+            <button type="button" class="dfm-chip" data-filter="length" data-value="Short Pitch" onclick="selectFilterChip(this)">Short Pitch</button>
+          </div>
+        </div>
+
+        <!-- Stump Line Filter -->
+        <div class="dfm-section">
+          <label class="dfm-section-label">Stump Line</label>
+          <div class="dfm-chips-grid" id="dfm-chips-line">
+            <button type="button" class="dfm-chip active" data-filter="line" data-value="all" onclick="selectFilterChip(this)">All Lines</button>
+            <button type="button" class="dfm-chip" data-filter="line" data-value="Outside Off" onclick="selectFilterChip(this)">Outside Off</button>
+            <button type="button" class="dfm-chip" data-filter="line" data-value="Middle Stump" onclick="selectFilterChip(this)">Middle Stump</button>
+            <button type="button" class="dfm-chip" data-filter="line" data-value="Down Leg" onclick="selectFilterChip(this)">Down Leg</button>
+          </div>
+        </div>
+
+        <!-- Pace / Speed Filter -->
+        <div class="dfm-section">
+          <label class="dfm-section-label">Release Pace</label>
+          <div class="dfm-chips-grid" id="dfm-chips-speed">
+            <button type="button" class="dfm-chip active" data-filter="speed" data-value="all" onclick="selectFilterChip(this)">All Speeds</button>
+            <button type="button" class="dfm-chip" data-filter="speed" data-value="fast" onclick="selectFilterChip(this)">&gt; 90 mph (Express)</button>
+            <button type="button" class="dfm-chip" data-filter="speed" data-value="medium" onclick="selectFilterChip(this)">80 - 90 mph (Brisk)</button>
+            <button type="button" class="dfm-chip" data-filter="speed" data-value="slow" onclick="selectFilterChip(this)">&lt; 80 mph (Control)</button>
+          </div>
+        </div>
+
+        <!-- Batsman Hand Filter -->
+        <div class="dfm-section">
+          <label class="dfm-section-label">Batsman Hand</label>
+          <div class="dfm-chips-grid" id="dfm-chips-hand">
+            <button type="button" class="dfm-chip active" data-filter="hand" data-value="all" onclick="selectFilterChip(this)">All Batsmen</button>
+            <button type="button" class="dfm-chip" data-filter="hand" data-value="Right Hand" onclick="selectFilterChip(this)">Right Hand</button>
+            <button type="button" class="dfm-chip" data-filter="hand" data-value="Left Hand" onclick="selectFilterChip(this)">Left Hand</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="dfm-footer">
+        <button type="button" class="dfm-btn-back" onclick="resetDeliveriesFilter()">Reset Filters</button>
+        <button type="button" class="dfm-btn-apply" onclick="applyDeliveriesFilter()">Apply Filters</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: What is Swing Force? -->
+  <div class="custom-modal-backdrop hidden" id="modal-swing-force-info" onclick="if(event.target===this) closeSwingForceModal()">
+    <div class="custom-modal-card sfm-modal-card">
+      <div class="cmc-header">
+        <div class="cmc-title-group">
+          <span class="sfm-badge-pill">AERODYNAMICS</span>
+          <h3 class="cmc-title">What is Swing Force (SF)?</h3>
+        </div>
+        <button type="button" class="cmc-close-btn" onclick="closeSwingForceModal()" aria-label="Close Modal">&times;</button>
+      </div>
+      <div class="cmc-body">
+        <p class="sfm-intro">
+          <strong>Swing Force (SF)</strong> measures the lateral aerodynamic movement of the cricket ball through the air prior to pitching.
+        </p>
+        <div class="sfm-cards-grid">
+          <div class="sfm-feature-card">
+            <div class="sfc-icon icon-blue">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.3c.4-.2.6-.6.5-1.1z"/></svg>
+            </div>
+            <h4 class="sfc-title">Aerodynamic Mechanism</h4>
+            <p class="sfc-desc">Governed by the pressure differential created across the ball's raised seam and the boundary layer airflow separation.</p>
+          </div>
+          <div class="sfm-feature-card">
+            <div class="sfc-icon icon-orange">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+            </div>
+            <h4 class="sfc-title">Measurement Scale</h4>
+            <p class="sfc-desc"><strong>0.1 – 0.5 SF:</strong> Subtle late movement<br><strong>0.6 – 1.2 SF:</strong> Pronounced regulation swing<br><strong>1.3+ SF:</strong> High lateral deviation</p>
+          </div>
+        </div>
+        <div class="sfm-legend-box">
+          <span class="sfl-item"><strong style="color: #60a5fa;">Right Swing:</strong> Curves towards the off side</span>
+          <span class="sfl-item"><strong style="color: #fb923c;">Left Swing:</strong> Curves towards the leg side</span>
+        </div>
+      </div>
+      <div class="cmc-footer">
+        <button type="button" class="btn-primary" onclick="closeSwingForceModal()">Got it</button>
+      </div>
     </div>
   </div>
 

@@ -4,14 +4,14 @@
 // ============================================================================
 
 // ============================================================================
-// ⏱️ COUNT UP SPEED CONFIGURATION:
+//  COUNT UP SPEED CONFIGURATION:
 // EDIT THIS NUMBER BELOW to change how fast or slow the numbers count up:
 //   1.0 = Fast (1 second)
 //   2.0 = Smooth (2 seconds)
 //   2.5 = Smooth count (2.5 seconds) [CURRENT SETTING]
 //   3.5 = Very slow / Dramatic (3.5 seconds)
 // ============================================================================
-const COUNT_UP_DURATION = 2.5; // <-- 👈 CHANGE THIS VALUE TO ADJUST COUNT SPEED
+const COUNT_UP_DURATION = 2.5; // <--  CHANGE THIS VALUE TO ADJUST COUNT SPEED
 
 const DEFAULT_COUNT_UP_CONFIG = {
   from: 0,
