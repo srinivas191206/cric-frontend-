@@ -547,7 +547,7 @@ function switchDashboardView(viewId) {
   if (isTeamPortalView) {
     document.body.classList.add('team-mode-active');
     if (backToTeamBtn) backToTeamBtn.classList.add('hidden');
-    if (breadcrumbRoot) breadcrumbRoot.textContent = 'Teams & Squads';
+    if (breadcrumbRoot) breadcrumbRoot.textContent = 'TEAMS & SQUADS';
   } else {
     document.body.classList.remove('team-mode-active');
     if (backToTeamBtn) {
@@ -5571,110 +5571,1479 @@ function updateTopbarModeIndicator(mode) {
 }
 
 // ----------------------------------------------------------------------------
-// VIEW 1: TEAMS HUB
-// ----------------------------------------------------------------------------
-async function fetchAndRenderTeams() {
-  const grid = document.getElementById('teams-roster-grid');
-  const refStatus = document.getElementById('teams-refreshed-time');
-  if (refStatus) refStatus.textContent = 'Last refreshed just now';
+// ============================================================================
+// TRAJECTA.AI — REDESIGNED TEAMS & SQUADS MANAGEMENT MODULE (V2.4 PRO)
+// ============================================================================
 
-  try {
-    const res = await fetch('/api/teams');
-    if (!res.ok) throw new Error('Failed to load teams');
-    allTeamsList = await res.json();
-    renderTeamsGrid(allTeamsList);
-  } catch (err) {
-    console.error("Error loading teams:", err);
-    if (grid) grid.innerHTML = `<div class="p-6 text-muted">Unable to load teams. Please ensure server is running.</div>`;
+const TM_STORAGE_KEY = 'trajecta_teams_data_v2';
+
+const TM_DEFAULT_TEAMS = [
+  {
+    id: "team_coastal_warriors",
+    name: "Coastal Warriors",
+    code: "CW",
+    status: "active",
+    category: "Senior Men's Team",
+    age_group: "Senior",
+    crest_type: "tiger",
+    crest_color: "#F59E0B",
+    location: "Kakinada, AP",
+    city: "Kakinada",
+    state: "Andhra Pradesh",
+    country: "India",
+    primary_format: "T20",
+    formats: ["T20", "ODI"],
+    playing_level: "Club",
+    season: "2026/27",
+    venue: "ACA Ground, Kakinada",
+    pitch_type: "20.12m Turf",
+    description: "Coastal Warriors premier senior pace & spin attack.",
+    head_coach: "Coach R. Sharma",
+    assistant_coach: "K. Mohan",
+    team_manager: "V. Srinivas",
+    analyst: "TRAJECTA Vision AI",
+    contact_email: "coastal@trajecta.cricket",
+    contact_phone: "+91 98480 12345",
+    players_count: 18,
+    squads_count: 3,
+    sessions_count: 12,
+    active_players_pct: 86,
+    squads: [
+      { id: "sq_cw_1", name: "Senior Men's First XI", category: "Senior", format: "T20", status: "Active" },
+      { id: "sq_cw_2", name: "T20 Blitz Squad", category: "Senior", format: "T20", status: "Active" },
+      { id: "sq_cw_3", name: "Development Reserve", category: "Senior", format: "ODI", status: "Active" }
+    ],
+    last_session: {
+      title: "Bowling Analysis - Match Prep",
+      time: "Today, 10:30 AM",
+      thumbnail: "/samples/sample_3_match_view.png"
+    },
+    created_at: "28 Oct 2026",
+    created_ts: 1793145600,
+    updated_at: "31 Oct 2026"
+  },
+  {
+    id: "team_eastern_eagles",
+    name: "Eastern Eagles",
+    code: "EE",
+    status: "active",
+    category: "Under 19 Team",
+    age_group: "Under 19",
+    crest_type: "eagle",
+    crest_color: "#38BDF8",
+    location: "Kakinada, AP",
+    city: "Kakinada",
+    state: "Andhra Pradesh",
+    country: "India",
+    primary_format: "T20",
+    formats: ["T20", "Practice"],
+    playing_level: "District",
+    season: "2026/27",
+    venue: "Port Stadium, Kakinada",
+    pitch_type: "20.12m Turf",
+    description: "East Coast high-performance U19 pace battery.",
+    head_coach: "sandy",
+    assistant_coach: "M. Rao",
+    team_manager: "D. Prasad",
+    analyst: "TRAJECTA Vision AI",
+    contact_email: "eagles@trajecta.cricket",
+    contact_phone: "+91 98480 23456",
+    players_count: 16,
+    squads_count: 2,
+    sessions_count: 8,
+    active_players_pct: 75,
+    squads: [
+      { id: "sq_ee_1", name: "U19 Championship Squad", category: "Under 19", format: "T20", status: "Active" },
+      { id: "sq_ee_2", name: "U19 Pace Academy", category: "Under 19", format: "Practice", status: "Active" }
+    ],
+    last_session: {
+      title: "Batting Drills - Net Session",
+      time: "Yesterday, 5:15 PM",
+      thumbnail: "/samples/sample_4_wide_angle.png"
+    },
+    created_at: "24 Oct 2026",
+    created_ts: 1792800000,
+    updated_at: "30 Oct 2026"
+  },
+  {
+    id: "team_rising_stars",
+    name: "Rising Stars Academy",
+    code: "RSA",
+    status: "archived",
+    category: "Junior Development",
+    age_group: "Under 16",
+    crest_type: "lion",
+    crest_color: "#EF4444",
+    location: "Kakinada, AP",
+    city: "Kakinada",
+    state: "Andhra Pradesh",
+    country: "India",
+    primary_format: "Practice",
+    formats: ["Practice", "Academy"],
+    playing_level: "Academy",
+    season: "2025/26",
+    venue: "District Sports Ground",
+    pitch_type: "18m Junior Turf",
+    description: "Grassroots youth cricket foundation and development.",
+    head_coach: "Coach K. Varma",
+    assistant_coach: "P. Naidu",
+    team_manager: "K. Reddy",
+    analyst: "TRAJECTA Junior AI",
+    contact_email: "risingstars@trajecta.cricket",
+    contact_phone: "+91 98480 34567",
+    players_count: 24,
+    squads_count: 2,
+    sessions_count: 6,
+    active_players_pct: 62,
+    squads: [
+      { id: "sq_rsa_1", name: "U16 Academy Blue", category: "Junior", format: "Practice", status: "Archived" },
+      { id: "sq_rsa_2", name: "U14 Foundation Squad", category: "Junior", format: "Academy", status: "Archived" }
+    ],
+    last_session: {
+      title: "Fielding + Bowling Basics",
+      time: "15 Oct 2025, 4:20 PM",
+      thumbnail: "/samples/sample_1_single_wicket.png"
+    },
+    created_at: "10 Oct 2025",
+    created_ts: 1760083200,
+    updated_at: "15 Oct 2025"
+  },
+  {
+    id: "team_womens_xi",
+    name: "Women's XI",
+    code: "WXI",
+    status: "archived",
+    category: "Senior Women's Team",
+    age_group: "Senior",
+    crest_type: "helmet",
+    crest_color: "#10B981",
+    location: "Kakinada, AP",
+    city: "Kakinada",
+    state: "Andhra Pradesh",
+    country: "India",
+    primary_format: "T20",
+    formats: ["T20", "ODI"],
+    playing_level: "Club",
+    season: "2025/26",
+    venue: "Gandhi Park Net Facility",
+    pitch_type: "20.12m Turf",
+    description: "Women's senior pace bowling and match prep unit.",
+    head_coach: "Coach P. Reddy",
+    assistant_coach: "S. Devi",
+    team_manager: "L. Murthy",
+    analyst: "TRAJECTA Vision AI",
+    contact_email: "womensxi@trajecta.cricket",
+    contact_phone: "+91 98480 45678",
+    players_count: 10,
+    squads_count: 1,
+    sessions_count: 4,
+    active_players_pct: 80,
+    squads: [
+      { id: "sq_wxi_1", name: "Senior Women's T20 XI", category: "Senior", format: "T20", status: "Archived" }
+    ],
+    last_session: {
+      title: "Skills Assessment - Pace & Spin",
+      time: "10 Oct 2025, 11:00 AM",
+      thumbnail: "/samples/sample_2_two_wickets.png"
+    },
+    created_at: "05 Oct 2025",
+    created_ts: 1759651200,
+    updated_at: "10 Oct 2025"
   }
+];
+
+// Module State
+let tmTeams = [];
+let tmFilterStatus = 'all'; // 'all' | 'active' | 'archived'
+let tmFilterFormat = 'all'; // 'all' | 'T20' | 'ODI' | 'Test' | 'Practice' | 'Academy'
+let tmSortBy = 'updated'; // 'updated' | 'name-asc' | 'name-desc' | 'players' | 'sessions' | 'created'
+let tmSearchQuery = '';
+let tmIsRefreshing = false;
+let tmWizardCurrentStep = 1;
+let tmWizardEditingTeamId = null;
+let tmWizardSelectedFormats = ['T20', 'ODI'];
+let tmWizardSquadRows = [];
+let tmTargetActionTeamId = null;
+
+// Mascot SVGs
+const TM_MASCOT_SVGS = {
+  tiger: `<svg width="34" height="34" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M4 4.5C4 3.5 5 2.5 6.5 3L8 4.5C9.2 4.2 10.5 4 12 4C13.5 4 14.8 4.2 16 4.5L17.5 3C19 2.5 20 3.5 20 4.5L19.5 7C20.5 8.5 21 10.2 21 12C21 17 17 21 12 21C7 21 3 17 3 12C3 10.2 3.5 8.5 4.5 7L4 4.5Z" fill="#F59E0B" fill-opacity="0.25" stroke="#F59E0B" stroke-width="1.8" stroke-linejoin="round"/>
+    <path d="M8 8.5L10 11M16 8.5L14 11" stroke="#F59E0B" stroke-width="2" stroke-linecap="round"/>
+    <path d="M9 14.5C10 15.5 11 16 12 16C13 16 14 15.5 15 14.5" stroke="#F59E0B" stroke-width="1.8" stroke-linecap="round"/>
+    <circle cx="8.5" cy="11.5" r="1.2" fill="#F59E0B"/>
+    <circle cx="15.5" cy="11.5" r="1.2" fill="#F59E0B"/>
+    <path d="M12 4V7M12 16V18" stroke="#F59E0B" stroke-width="1.8" stroke-linecap="round"/>
+    <path d="M6 13L4 13.5M18 13L20 13.5" stroke="#F59E0B" stroke-width="1.8" stroke-linecap="round"/>
+  </svg>`,
+
+  eagle: `<svg width="34" height="34" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M3 13C3.5 8.5 8 5 13.5 5C17.5 5 20.5 7 21 10C21.5 13 19 15 16 15C18 16 20 17 21 19C19 20 16 19.5 14 18.5C12.5 19.5 10 20 7 19.5C5 18 3.5 16 3 13Z" fill="#38BDF8" fill-opacity="0.25" stroke="#38BDF8" stroke-width="1.8" stroke-linejoin="round"/>
+    <path d="M12 9C12.5 9 13.5 9.5 14 10.5C14.5 11.5 15 12 16 12M13 10H13.01" stroke="#38BDF8" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="13" cy="9" r="1.2" fill="#38BDF8"/>
+    <path d="M18 12C19.5 12 21 11.5 21 10C20 10 18.5 11 18 12Z" fill="#38BDF8"/>
+  </svg>`,
+
+  lion: `<svg width="34" height="34" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 3C7 3 3 7 3 12C3 17 7 21 12 21C17 21 21 17 21 12C21 7 17 3 12 3Z" fill="#EF4444" fill-opacity="0.22" stroke="#EF4444" stroke-width="1.8"/>
+    <path d="M5 8C3.5 9.5 3.5 12 4.5 14C3.5 15.5 4 18 6 19M19 8C20.5 9.5 20.5 12 19.5 14C20.5 15.5 20 18 18 19" stroke="#EF4444" stroke-width="1.8" stroke-linecap="round"/>
+    <path d="M9 11L10 12.5M15 11L14 12.5" stroke="#EF4444" stroke-width="2" stroke-linecap="round"/>
+    <path d="M10 16C11 17 13 17 14 16" stroke="#EF4444" stroke-width="1.8" stroke-linecap="round"/>
+    <circle cx="9.5" cy="11.5" r="1.2" fill="#EF4444"/>
+    <circle cx="14.5" cy="11.5" r="1.2" fill="#EF4444"/>
+    <path d="M12 13V15.5" stroke="#EF4444" stroke-width="1.8" stroke-linecap="round"/>
+  </svg>`,
+
+  helmet: `<svg width="34" height="34" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M4 12C4 7.58 7.58 4 12 4C16.42 4 20 7.58 20 12C20 13.5 19.6 14.8 19 16L17.5 15C17.8 14.1 18 13.1 18 12C18 8.69 15.31 6 12 6C8.69 6 6 8.69 6 12C6 13.5 6.5 14.9 7.4 16L6 17.2C4.8 15.8 4 14 4 12Z" fill="#10B981" fill-opacity="0.25" stroke="#10B981" stroke-width="1.8"/>
+    <path d="M7 16H17M8 18.5H16M10 21H14" stroke="#10B981" stroke-width="1.8" stroke-linecap="round"/>
+    <path d="M10 16V21M14 16V21" stroke="#10B981" stroke-width="1.6" stroke-linecap="round"/>
+    <circle cx="12" cy="10" r="1.5" fill="#10B981"/>
+  </svg>`
+};
+
+/**
+ * Load Teams Data (Attempts API first, falls back to LocalStorage seed)
+ */
+async function loadTmTeamsData() {
+  const cached = localStorage.getItem(TM_STORAGE_KEY);
+  if (cached) {
+    try {
+      tmTeams = JSON.parse(cached);
+    } catch (e) {
+      tmTeams = [...TM_DEFAULT_TEAMS];
+    }
+  } else {
+    tmTeams = [...TM_DEFAULT_TEAMS];
+    saveTmTeamsData();
+  }
+
+  // Attempt backend API sync in background
+  try {
+    const res = await fetch('/api/teams', { signal: AbortSignal.timeout(2000) });
+    if (res.ok) {
+      const serverTeams = await res.json();
+      if (Array.isArray(serverTeams) && serverTeams.length > 0) {
+        // Merge server teams with rich local structure
+        tmTeams = serverTeams.map(st => {
+          const local = tmTeams.find(t => t.id === st.id) || {};
+          return { ...local, ...st };
+        });
+        saveTmTeamsData();
+      }
+    }
+  } catch (err) {
+    // Graceful offline fallback
+    console.info("TRAJECTA Teams API working in offline mode:", err.message);
+  }
+
+  allTeamsList = tmTeams;
 }
 
-function renderTeamsGrid(teams) {
+function saveTmTeamsData() {
+  localStorage.setItem(TM_STORAGE_KEY, JSON.stringify(tmTeams));
+  allTeamsList = tmTeams;
+}
+
+/**
+ * Entry point when user navigates to Teams Hub
+ */
+async function fetchAndRenderTeams() {
+  renderTmSkeletonLoading();
+  await loadTmTeamsData();
+  renderTmSummaryCards();
+  renderTeamsGrid();
+}
+
+/**
+ * Render Skeleton Loading State (State 1)
+ */
+function renderTmSkeletonLoading() {
+  const grid = document.getElementById('teams-roster-grid');
+  if (!grid) return;
+  grid.innerHTML = Array(3).fill(0).map(() => `
+    <div class="tm-team-card" style="opacity:0.75; pointer-events:none;">
+      <div class="tm-card-header">
+        <div class="tm-skeleton" style="width:54px; height:54px; border-radius:12px;"></div>
+        <div style="flex:1; display:flex; flex-direction:column; gap:6px;">
+          <div class="tm-skeleton" style="width:60%; height:16px;"></div>
+          <div class="tm-skeleton" style="width:40%; height:12px;"></div>
+          <div class="tm-skeleton" style="width:75%; height:10px;"></div>
+        </div>
+      </div>
+      <div class="tm-skeleton" style="width:100%; height:44px; border-radius:10px;"></div>
+      <div class="tm-skeleton" style="width:100%; height:48px; border-radius:9px;"></div>
+      <div style="display:flex; gap:8px;">
+        <div class="tm-skeleton" style="flex:1.2; height:32px; border-radius:8px;"></div>
+        <div class="tm-skeleton" style="flex:1; height:32px; border-radius:8px;"></div>
+        <div class="tm-skeleton" style="flex:1; height:32px; border-radius:8px;"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+/**
+ * Render 4 Summary KPI Cards
+ */
+function renderTmSummaryCards() {
+  const total = tmTeams.length;
+  const active = tmTeams.filter(t => t.status === 'active').length;
+  const archived = tmTeams.filter(t => t.status === 'archived').length;
+  const players = tmTeams.reduce((sum, t) => sum + (Number(t.players_count) || 0), 0);
+  const squads = tmTeams.reduce((sum, t) => sum + (Number(t.squads_count) || 0), 0);
+  const sessions = tmTeams.reduce((sum, t) => sum + (Number(t.sessions_count) || 0), 0);
+
+  const elTotalTeams = document.getElementById('summary-total-teams');
+  const elTeamsSub = document.getElementById('summary-teams-sub');
+  const elTotalPlayers = document.getElementById('summary-total-players');
+  const elTotalSquads = document.getElementById('summary-total-squads');
+  const elTotalSessions = document.getElementById('summary-total-sessions');
+
+  if (elTotalTeams) elTotalTeams.textContent = total;
+  if (elTeamsSub) elTeamsSub.textContent = `${active} Active + ${archived} Archived`;
+  if (elTotalPlayers) elTotalPlayers.textContent = players;
+  if (elTotalSquads) elTotalSquads.textContent = squads;
+  if (elTotalSessions) elTotalSessions.textContent = sessions;
+
+  // Update Toolbar Filter Counts
+  const cntAll = document.getElementById('count-all-teams');
+  const cntActive = document.getElementById('count-active-teams');
+  const cntArchived = document.getElementById('count-archived-teams');
+
+  if (cntAll) cntAll.textContent = `(${total})`;
+  if (cntActive) cntActive.textContent = `(${active})`;
+  if (cntArchived) cntArchived.textContent = `(${archived})`;
+}
+
+/**
+ * Main Team Cards Grid Rendering Function
+ */
+function renderTeamsGrid() {
   const grid = document.getElementById('teams-roster-grid');
   if (!grid) return;
 
-  if (!teams || teams.length === 0) {
+  // Close any open contextual menus
+  closeAllTmMenus();
+
+  // 1. Filter by Status
+  let filtered = [...tmTeams];
+  if (tmFilterStatus === 'active') {
+    filtered = filtered.filter(t => t.status === 'active');
+  } else if (tmFilterStatus === 'archived') {
+    filtered = filtered.filter(t => t.status === 'archived');
+  }
+
+  // 2. Filter by Cricket Format
+  if (tmFilterFormat && tmFilterFormat !== 'all') {
+    filtered = filtered.filter(t => 
+      (t.primary_format && t.primary_format.toLowerCase() === tmFilterFormat.toLowerCase()) ||
+      (Array.isArray(t.formats) && t.formats.some(f => f.toLowerCase() === tmFilterFormat.toLowerCase()))
+    );
+  }
+
+  // 3. Filter by Search Query
+  if (tmSearchQuery && tmSearchQuery.trim()) {
+    const q = tmSearchQuery.toLowerCase().trim();
+    filtered = filtered.filter(t => {
+      const matchName = (t.name || '').toLowerCase().includes(q);
+      const matchCode = (t.code || '').toLowerCase().includes(q);
+      const matchCat = (t.category || '').toLowerCase().includes(q);
+      const matchLoc = (t.location || '').toLowerCase().includes(q);
+      const matchCoach = (t.head_coach || '').toLowerCase().includes(q);
+      const matchSquad = Array.isArray(t.squads) && t.squads.some(s => (s.name || '').toLowerCase().includes(q));
+      return matchName || matchCode || matchCat || matchLoc || matchCoach || matchSquad;
+    });
+  }
+
+  // 4. Sort Cards
+  filtered.sort((a, b) => {
+    switch (tmSortBy) {
+      case 'name-asc':
+        return (a.name || '').localeCompare(b.name || '');
+      case 'name-desc':
+        return (b.name || '').localeCompare(a.name || '');
+      case 'players':
+        return (b.players_count || 0) - (a.players_count || 0);
+      case 'sessions':
+        return (b.sessions_count || 0) - (a.sessions_count || 0);
+      case 'created':
+        return (b.created_ts || 0) - (a.created_ts || 0);
+      case 'updated':
+      default:
+        return (b.created_ts || 0) - (a.created_ts || 0);
+    }
+  });
+
+  // State 4: No Search Results
+  if (tmSearchQuery.trim() && filtered.length === 0) {
     grid.innerHTML = `
-      <div style="grid-column: 1 / -1; text-align: center; padding: 48px; background: var(--bg-card); border-radius: 16px; border: 1px dashed var(--border-light);">
-        <p style="color: var(--text-muted); margin-bottom: 14px;">No teams found matching search.</p>
-        <button class="btn-th-create-team" onclick="openNewTeamModal()">+ Create New Team</button>
+      <div style="grid-column: 1 / -1; text-align: center; padding: 48px 24px; background: #1E2027; border: 1px dashed #343741; border-radius: 14px;">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#7E8694" stroke-width="1.8" style="margin-bottom:12px;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <h4 style="font-size:16px; font-weight:700; color:#FFFFFF; margin-bottom:6px;">No teams found matching "${escapeHtml(tmSearchQuery)}"</h4>
+        <p style="font-size:12.5px; color:#A4AAB8; margin-bottom:16px;">Try adjusting your search terms or cricket format filters.</p>
+        <button type="button" class="btn-tm-secondary" onclick="clearTmSearch()">Clear Search Query</button>
       </div>
     `;
     return;
   }
 
-  grid.innerHTML = teams.map(team => {
-    return `
-      <div class="team-card" onclick="openTeamRoster('${team.id}')" title="Open ${escapeHtml(team.name)}">
-        <div class="team-card-top">
-          <span class="team-badge-members">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            <span>${team.players_count || 0}</span>
-          </span>
-        </div>
-        <div class="team-card-center">
-          <div class="team-initials-hero">${team.code || 'TM'}</div>
-        </div>
-        <div class="team-card-bottom">
-          <h3 class="team-card-name">${escapeHtml(team.name)}</h3>
-          <span class="team-card-date">Created ${team.created_at || 'Recently'}</span>
-        </div>
+  // State 5: No Active or Archived Teams
+  if (!tmSearchQuery.trim() && filtered.length === 0) {
+    const isArchivedTab = tmFilterStatus === 'archived';
+    grid.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 52px 24px; background: #1E2027; border: 1px dashed #343741; border-radius: 14px;">
+        <div style="font-size:32px; margin-bottom:10px;">${isArchivedTab ? '📦' : '🏏'}</div>
+        <h4 style="font-size:17px; font-weight:700; color:#FFFFFF; margin-bottom:6px;">${isArchivedTab ? 'No Archived Teams' : 'No Active Teams Found'}</h4>
+        <p style="font-size:13px; color:#A4AAB8; margin-bottom:18px;">${isArchivedTab ? 'Archived teams will appear here. No teams are currently archived.' : 'Create a new team to begin managing players, squads and training sessions.'}</p>
+        ${isArchivedTab ? '<button type="button" class="btn-tm-secondary" onclick="setTmFilter(\'all\')">View All Teams</button>' : '<button type="button" class="tm-btn-new-team" onclick="openNewTeamWizard()">+ Create a New Team</button>'}
       </div>
     `;
+    return;
+  }
+
+  // State 3: Normal Grid Display
+  let html = filtered.map(team => renderTeamCardHtml(team)).join('');
+
+  // Always append the "+ Create a New Team" dashed card at the end
+  html += `
+    <div class="tm-create-dashed-card" onclick="openNewTeamWizard()" title="Create a New Cricket Team">
+      <div class="tm-create-circle-btn">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </div>
+      <h3 class="tm-create-card-title">Create a New Team</h3>
+      <p class="tm-create-card-sub">Add a new team to start managing players, squads and training sessions.</p>
+      <button type="button" class="tm-create-card-btn">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span>Create New Team</span>
+      </button>
+    </div>
+  `;
+
+  grid.innerHTML = html;
+}
+
+/**
+ * Generate HTML markup for a single Team Card
+ */
+function renderTeamCardHtml(team) {
+  const isArchived = team.status === 'archived';
+  const statusLabel = isArchived ? 'Archived' : 'Active';
+  const statusClass = isArchived ? 'status-archived' : 'status-active';
+
+  // Mascot Crest
+  let crestInner = '';
+  if (team.custom_logo_url) {
+    crestInner = `<img src="${escapeHtml(team.custom_logo_url)}" alt="${escapeHtml(team.name)}" />`;
+  } else {
+    crestInner = TM_MASCOT_SVGS[team.crest_type] || TM_MASCOT_SVGS.tiger;
+  }
+
+  // Format Tags
+  const formatsList = Array.isArray(team.formats) && team.formats.length > 0 
+    ? team.formats 
+    : [team.primary_format || 'T20'];
+
+  const formatTagsHtml = formatsList.map(fmt => {
+    let cls = 'tm-format-tag';
+    if (fmt === 'Practice') cls += ' tag-practice';
+    else if (fmt === 'Academy') cls += ' tag-academy';
+    return `<span class="${cls}">${escapeHtml(fmt)}</span>`;
   }).join('');
+
+  // Active Players Donut Gauge
+  const pct = Math.max(0, Math.min(100, team.active_players_pct || 75));
+  const ringColor = pct >= 75 ? '#00C58A' : (pct >= 50 ? '#F59E0B' : '#EF4444');
+  const strokeDash = `${(pct / 100) * 56.5} 56.5`;
+
+  // Last Session Box
+  const lastSess = team.last_session || {
+    title: "Bowling Analysis - Match Prep",
+    time: "Today, 10:30 AM",
+    thumbnail: "/samples/sample_3_match_view.png"
+  };
+
+  return `
+    <div class="tm-team-card" id="card-${team.id}" data-team-id="${team.id}">
+      <!-- Header -->
+      <div class="tm-card-header">
+        <div class="tm-crest-box crest-${team.crest_type || 'tiger'}">
+          ${crestInner}
+        </div>
+        <div class="tm-header-text">
+          <div class="tm-title-row">
+            <h3 class="tm-team-name" title="${escapeHtml(team.name)}">${escapeHtml(team.name)}</h3>
+            <span class="tm-status-pill ${statusClass}">${statusLabel}</span>
+          </div>
+          <div class="tm-team-category">${escapeHtml(team.category || "Senior Men's Team")}</div>
+          <div class="tm-meta-row">
+            <span class="tm-location">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              <span>${escapeHtml(team.location || "Kakinada, AP")}</span>
+            </span>
+            ${formatTagsHtml}
+          </div>
+        </div>
+        
+        <!-- Contextual 3-Dot Button -->
+        <button type="button" class="tm-menu-btn" onclick="toggleTmCardMenu('${team.id}', event)" title="Team Options" aria-label="Team Options">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="5" cy="12" r="2"/></svg>
+        </button>
+
+        <!-- Dropdown Menu -->
+        <div class="tm-dropdown-menu hidden" id="menu-${team.id}">
+          <button type="button" class="tm-dropdown-item" onclick="onViewTeamClick('${team.id}')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            <span>View Team Roster</span>
+          </button>
+          <button type="button" class="tm-dropdown-item" onclick="openEditTeamWizard('${team.id}')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            <span>Edit Team Profile</span>
+          </button>
+          <button type="button" class="tm-dropdown-item" onclick="openManageSquadsModal('${team.id}')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            <span>Manage Squads (${team.squads_count || 1})</span>
+          </button>
+          <button type="button" class="tm-dropdown-item" onclick="toggleArchiveTeam('${team.id}')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+            <span>${isArchived ? 'Restore Team' : 'Archive Team'}</span>
+          </button>
+          <button type="button" class="tm-dropdown-item item-destructive" onclick="promptDeleteTeam('${team.id}')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+            <span>Delete Team</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 4 Stats Cells -->
+      <div class="tm-stats-grid">
+        <div class="tm-stat-cell">
+          <div class="tm-stat-icon" style="color:#F00035;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <div class="tm-stat-info">
+            <span class="tm-stat-num">${team.players_count || 0}</span>
+            <span class="tm-stat-lbl">Players</span>
+          </div>
+        </div>
+
+        <div class="tm-stat-cell">
+          <div class="tm-stat-icon" style="color:#2685F5;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div class="tm-stat-info">
+            <span class="tm-stat-num">${team.squads_count || 1}</span>
+            <span class="tm-stat-lbl">Squads</span>
+          </div>
+        </div>
+
+        <div class="tm-stat-cell">
+          <div class="tm-stat-icon" style="color:#F00035;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          </div>
+          <div class="tm-stat-info">
+            <span class="tm-stat-num">${team.sessions_count || 0}</span>
+            <span class="tm-stat-lbl">Sessions</span>
+          </div>
+        </div>
+
+        <div class="tm-stat-cell">
+          <div class="tm-donut-circle">
+            <svg width="22" height="22" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="9" stroke="rgba(255,255,255,0.1)" stroke-width="3" fill="none"/>
+              <circle cx="12" cy="12" r="9" stroke="${ringColor}" stroke-width="3" stroke-dasharray="${strokeDash}" stroke-dashoffset="0" stroke-linecap="round" fill="none" transform="rotate(-90 12 12)"/>
+            </svg>
+          </div>
+          <div class="tm-stat-info">
+            <span class="tm-stat-num" style="color:${ringColor};">${pct}%</span>
+            <span class="tm-stat-lbl">Active Players</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Last Session Box -->
+      <div class="tm-last-session-card" onclick="onViewLastSessionClick('${team.id}')" title="View ${escapeHtml(lastSess.title)}">
+        <img class="tm-ls-thumb" src="${lastSess.thumbnail}" alt="Session thumbnail" onerror="this.src='/samples/sample_3_match_view.png'" />
+        <div class="tm-ls-text">
+          <div class="tm-ls-sublabel">Last Session</div>
+          <div class="tm-ls-title">${escapeHtml(lastSess.title)}</div>
+          <div class="tm-ls-time">${escapeHtml(lastSess.time)}</div>
+        </div>
+        <svg class="tm-ls-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+
+      <!-- 3 Card Action Buttons -->
+      <div class="tm-card-actions">
+        <button type="button" class="btn-tm-view ${isArchived ? 'archived-style' : ''}" onclick="onViewTeamClick('${team.id}')">
+          <span>View Team</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+        <button type="button" class="btn-tm-secondary" onclick="openManageSquadsModal('${team.id}')" title="Manage Squads">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          <span>Manage Squads</span>
+        </button>
+        <button type="button" class="btn-tm-secondary" onclick="openTeamSettingsModal('${team.id}')" title="Team Settings">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <span>Team Settings</span>
+        </button>
+      </div>
+    </div>
+  `;
 }
 
-function onTeamsSearchInput(query) {
-  const q = (query || '').toLowerCase().trim();
-  if (!q) {
-    renderTeamsGrid(allTeamsList);
-    return;
+// ----------------------------------------------------------------------------
+// TOOLBAR HANDLERS: SEARCH, FILTERS, SORTS & REFRESH
+// ----------------------------------------------------------------------------
+
+function setTmFilter(status) {
+  tmFilterStatus = status;
+  
+  const pills = ['filter-all-teams', 'filter-active-teams', 'filter-archived-teams'];
+  pills.forEach(pId => {
+    const el = document.getElementById(pId);
+    if (!el) return;
+    if (
+      (status === 'all' && pId === 'filter-all-teams') ||
+      (status === 'active' && pId === 'filter-active-teams') ||
+      (status === 'archived' && pId === 'filter-archived-teams')
+    ) {
+      el.classList.add('active');
+    } else {
+      el.classList.remove('active');
+    }
+  });
+
+  renderTeamsGrid();
+}
+
+function onTmSearchInput(query) {
+  tmSearchQuery = query || '';
+  const clearBtn = document.getElementById('tm-search-clear');
+  if (clearBtn) {
+    if (tmSearchQuery.trim()) clearBtn.classList.remove('hidden');
+    else clearBtn.classList.add('hidden');
   }
-  const filtered = allTeamsList.filter(t => 
-    (t.name || '').toLowerCase().includes(q) ||
-    (t.code || '').toLowerCase().includes(q) ||
-    (t.description || '').toLowerCase().includes(q)
-  );
-  renderTeamsGrid(filtered);
+  renderTeamsGrid();
 }
 
-function openNewTeamModal() {
-  const modal = document.getElementById('new-team-modal');
-  if (modal) modal.classList.remove('hidden');
+function clearTmSearch() {
+  const input = document.getElementById('tm-search-input');
+  if (input) input.value = '';
+  onTmSearchInput('');
 }
 
-function closeNewTeamModal() {
-  const modal = document.getElementById('new-team-modal');
-  if (modal) modal.classList.add('hidden');
+function onTmFormatChange(format) {
+  tmFilterFormat = format;
+  renderTeamsGrid();
 }
 
-async function submitCreateTeam() {
-  const nameInput = document.getElementById('new-team-name-input');
-  const descInput = document.getElementById('new-team-desc-input');
-  if (!nameInput || !nameInput.value.trim()) return;
+function onTmSortChange(sortBy) {
+  tmSortBy = sortBy;
+  renderTeamsGrid();
+}
+
+async function refreshTmTeams() {
+  if (tmIsRefreshing) return;
+  tmIsRefreshing = true;
+
+  const btn = document.getElementById('tm-refresh-btn');
+  if (btn) btn.classList.add('spinning');
 
   try {
-    const res = await fetch('/api/teams', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: nameInput.value.trim(),
-        description: descInput ? descInput.value.trim() : ''
-      })
-    });
-    if (!res.ok) throw new Error('Failed to create team');
-    const newTeam = await res.json();
-    closeNewTeamModal();
-    if (nameInput) nameInput.value = '';
-    if (descInput) descInput.value = '';
-    await fetchAndRenderTeams();
-    openTeamRoster(newTeam.id);
+    // Attempt remote re-fetch
+    await loadTmTeamsData();
+    renderTmSummaryCards();
+    renderTeamsGrid();
+    showTmToast("Teams & squads refreshed successfully", "success");
   } catch (err) {
-    alert("Error creating team: " + err.message);
+    showTmToast("Unable to reach backend server. Displaying cached data.", "info");
+  } finally {
+    setTimeout(() => {
+      if (btn) btn.classList.remove('spinning');
+      tmIsRefreshing = false;
+    }, 450);
   }
 }
 
 // ----------------------------------------------------------------------------
+// CONTEXTUAL MENU CONTROLS
+// ----------------------------------------------------------------------------
+
+function toggleTmCardMenu(teamId, event) {
+  if (event) event.stopPropagation();
+  const targetMenu = document.getElementById(`menu-${teamId}`);
+  const isCurrentlyOpen = targetMenu && !targetMenu.classList.contains('hidden');
+
+  closeAllTmMenus();
+
+  if (!isCurrentlyOpen && targetMenu) {
+    targetMenu.classList.remove('hidden');
+  }
+}
+
+function closeAllTmMenus() {
+  document.querySelectorAll('.tm-dropdown-menu').forEach(menu => {
+    menu.classList.add('hidden');
+  });
+}
+
+document.addEventListener('click', () => {
+  closeAllTmMenus();
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeAllTmMenus();
+    closeTeamWizard();
+    closeArchiveModal();
+    closeDeleteTeamModal();
+    closeManageSquadsModal();
+    closeTeamSettingsModal();
+  }
+});
+
+// ----------------------------------------------------------------------------
+// CARD ACTION HANDLERS
+// ----------------------------------------------------------------------------
+
+function onViewTeamClick(teamId) {
+  const team = tmTeams.find(t => t.id === teamId);
+  if (!team) return;
+  currentActiveTeamId = teamId;
+  currentActiveTeamData = team;
+  
+  // Transition to team roster view
+  openTeamRoster(teamId);
+  showTmToast(`Switched to ${team.name} roster`, "info");
+}
+
+function onViewLastSessionClick(teamId) {
+  const team = tmTeams.find(t => t.id === teamId);
+  if (!team) return;
+  onViewTeamClick(teamId);
+}
+
+// ----------------------------------------------------------------------------
+// 5-STEP TEAM ONBOARDING & EDIT WIZARD
+// ----------------------------------------------------------------------------
+
+function openNewTeamWizard() {
+  tmWizardEditingTeamId = null;
+  tmWizardCurrentStep = 1;
+  tmWizardSelectedFormats = ['T20', 'ODI'];
+  tmWizardSquadRows = [
+    { name: "Senior Men's First XI", category: "Senior", format: "T20", status: "Active" }
+  ];
+
+  // Reset modal headers
+  const badge = document.getElementById('wizard-badge-label');
+  const title = document.getElementById('wizard-title-label');
+  const sub = document.getElementById('wizard-subtitle-label');
+  if (badge) badge.textContent = "TEAM ONBOARDING";
+  if (title) title.textContent = "Create a New Cricket Team";
+  if (sub) sub.textContent = "Complete the 5-step setup to establish your team profile, configuration and squads.";
+
+  // Reset inputs
+  const nameInput = document.getElementById('wiz-team-name');
+  const codeInput = document.getElementById('wiz-team-code');
+  const descInput = document.getElementById('wiz-team-desc');
+  const catInput = document.getElementById('wiz-team-category');
+  const ageInput = document.getElementById('wiz-team-age-group');
+  const venueInput = document.getElementById('wiz-venue');
+  const coachInput = document.getElementById('wiz-head-coach');
+
+  if (nameInput) nameInput.value = '';
+  if (codeInput) codeInput.value = '';
+  if (descInput) descInput.value = '';
+  if (catInput) catInput.value = "Senior Men's Team";
+  if (ageInput) ageInput.value = 'Senior';
+  if (venueInput) venueInput.value = 'ACA Cricket Ground, Kakinada';
+  if (coachInput) coachInput.value = 'Coach sandy';
+
+  selectWizardMascot('tiger');
+  renderWizardSquadRows();
+  setWizardStep(1);
+
+  const modal = document.getElementById('modal-team-wizard');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function openEditTeamWizard(teamId) {
+  const team = tmTeams.find(t => t.id === teamId);
+  if (!team) return;
+
+  tmWizardEditingTeamId = teamId;
+  tmWizardCurrentStep = 1;
+  tmWizardSelectedFormats = Array.isArray(team.formats) ? [...team.formats] : ['T20'];
+  tmWizardSquadRows = Array.isArray(team.squads) && team.squads.length > 0 
+    ? team.squads.map(s => ({ ...s })) 
+    : [{ name: "Senior Squad", category: "Senior", format: "T20", status: "Active" }];
+
+  const badge = document.getElementById('wizard-badge-label');
+  const title = document.getElementById('wizard-title-label');
+  const sub = document.getElementById('wizard-subtitle-label');
+  if (badge) badge.textContent = "EDIT CONFIGURATION";
+  if (title) title.textContent = `Edit ${team.name}`;
+  if (sub) sub.textContent = "Update team profile, formats, grounds and roster configuration.";
+
+  // Prepopulate
+  const nameInput = document.getElementById('wiz-team-name');
+  const codeInput = document.getElementById('wiz-team-code');
+  const descInput = document.getElementById('wiz-team-desc');
+  const catInput = document.getElementById('wiz-team-category');
+  const ageInput = document.getElementById('wiz-team-age-group');
+  const venueInput = document.getElementById('wiz-venue');
+  const coachInput = document.getElementById('wiz-head-coach');
+  const seasonInput = document.getElementById('wiz-season');
+  const cityInput = document.getElementById('wiz-city');
+
+  if (nameInput) nameInput.value = team.name || '';
+  if (codeInput) codeInput.value = team.code || '';
+  if (descInput) descInput.value = team.description || '';
+  if (catInput) catInput.value = team.category || "Senior Men's Team";
+  if (ageInput) ageInput.value = team.age_group || 'Senior';
+  if (venueInput) venueInput.value = team.venue || '';
+  if (coachInput) coachInput.value = team.head_coach || '';
+  if (seasonInput) seasonInput.value = team.season || '2026/27';
+  if (cityInput) cityInput.value = team.city || 'Kakinada';
+
+  selectWizardMascot(team.crest_type || 'tiger');
+  renderWizardSquadRows();
+  setWizardStep(1);
+
+  const modal = document.getElementById('modal-team-wizard');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeTeamWizard() {
+  const modal = document.getElementById('modal-team-wizard');
+  if (modal) modal.classList.add('hidden');
+}
+
+function setWizardStep(stepNum) {
+  tmWizardCurrentStep = stepNum;
+
+  // Update step indicators
+  for (let i = 1; i <= 5; i++) {
+    const node = document.getElementById(`step-node-${i}`);
+    const pane = document.getElementById(`wizard-step-${i}`);
+    if (node) {
+      node.classList.remove('active', 'completed');
+      if (i === stepNum) node.classList.add('active');
+      else if (i < stepNum) node.classList.add('completed');
+    }
+    if (pane) {
+      if (i === stepNum) pane.classList.remove('hidden');
+      else pane.classList.add('hidden');
+    }
+  }
+
+  // Update Back & Next buttons
+  const prevBtn = document.getElementById('wiz-btn-prev');
+  const nextBtn = document.getElementById('wiz-btn-next');
+
+  if (prevBtn) {
+    prevBtn.style.visibility = stepNum > 1 ? 'visible' : 'hidden';
+  }
+  if (nextBtn) {
+    if (stepNum === 5) {
+      nextBtn.innerHTML = `
+        <span>${tmWizardEditingTeamId ? 'Save Changes' : 'Create Team'}</span>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      `;
+    } else {
+      nextBtn.innerHTML = `
+        <span>Continue</span>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      `;
+    }
+  }
+
+  // If Step 5 (Review), populate summary
+  if (stepNum === 5) {
+    populateWizardReviewSummary();
+  }
+}
+
+function jumpToWizardStep(stepNum) {
+  if (stepNum > tmWizardCurrentStep) {
+    if (!validateCurrentStep(tmWizardCurrentStep)) return;
+  }
+  setWizardStep(stepNum);
+}
+
+function nextWizardStep() {
+  if (!validateCurrentStep(tmWizardCurrentStep)) return;
+  if (tmWizardCurrentStep < 5) {
+    setWizardStep(tmWizardCurrentStep + 1);
+  } else {
+    submitTeamWizard(false);
+  }
+}
+
+function prevWizardStep() {
+  if (tmWizardCurrentStep > 1) {
+    setWizardStep(tmWizardCurrentStep - 1);
+  }
+}
+
+function validateCurrentStep(stepNum) {
+  if (stepNum === 1) {
+    const name = document.getElementById('wiz-team-name');
+    const err = document.getElementById('err-team-name');
+    if (!name || !name.value.trim()) {
+      if (err) err.classList.remove('hidden');
+      if (name) name.focus();
+      return false;
+    }
+    if (err) err.classList.add('hidden');
+  }
+  return true;
+}
+
+function validateStep1() {
+  const name = document.getElementById('wiz-team-name');
+  const err = document.getElementById('err-team-name');
+  if (name && name.value.trim() && err) {
+    err.classList.add('hidden');
+  }
+}
+
+function selectWizardMascot(crestType) {
+  document.querySelectorAll('.tm-mascot-opt').forEach(opt => {
+    if (opt.getAttribute('data-crest') === crestType) {
+      opt.classList.add('selected');
+    } else {
+      opt.classList.remove('selected');
+    }
+  });
+  const hiddenInput = document.getElementById('wiz-selected-crest');
+  if (hiddenInput) hiddenInput.value = crestType;
+}
+
+function toggleWizardFormat(btn, format) {
+  if (tmWizardSelectedFormats.includes(format)) {
+    if (tmWizardSelectedFormats.length > 1) {
+      tmWizardSelectedFormats = tmWizardSelectedFormats.filter(f => f !== format);
+      btn.classList.remove('active');
+    } else {
+      showTmToast("At least one cricket format is required", "info");
+    }
+  } else {
+    tmWizardSelectedFormats.push(format);
+    btn.classList.add('active');
+  }
+}
+
+function toggleWizardSquadMode(mode) {
+  const container = document.getElementById('wiz-squads-container');
+  if (container) {
+    if (mode === 'none') container.classList.add('hidden');
+    else container.classList.remove('hidden');
+  }
+}
+
+function renderWizardSquadRows() {
+  const list = document.getElementById('wiz-squads-list');
+  if (!list) return;
+
+  if (tmWizardSquadRows.length === 0) {
+    list.innerHTML = `<p style="font-size:12px; color:#7E8694; margin:0;">No squads added yet.</p>`;
+    return;
+  }
+
+  list.innerHTML = tmWizardSquadRows.map((sq, idx) => `
+    <div style="display:flex; align-items:center; gap:8px; background:#1E2027; border:1px solid #343741; border-radius:9px; padding:8px 12px;">
+      <input type="text" class="tm-form-input" style="flex:1; padding:6px 10px; font-size:12px;" value="${escapeHtml(sq.name)}" placeholder="Squad Name" oninput="tmWizardSquadRows[${idx}].name = this.value" />
+      <select class="tm-form-select" style="width:110px; padding:6px 8px; font-size:11.5px;" onchange="tmWizardSquadRows[${idx}].category = this.value">
+        <option value="Senior" ${sq.category === 'Senior' ? 'selected' : ''}>Senior</option>
+        <option value="Under 19" ${sq.category === 'Under 19' ? 'selected' : ''}>Under 19</option>
+        <option value="Junior" ${sq.category === 'Junior' ? 'selected' : ''}>Junior</option>
+        <option value="Development" ${sq.category === 'Development' ? 'selected' : ''}>Development</option>
+      </select>
+      <select class="tm-form-select" style="width:90px; padding:6px 8px; font-size:11.5px;" onchange="tmWizardSquadRows[${idx}].format = this.value">
+        <option value="T20" ${sq.format === 'T20' ? 'selected' : ''}>T20</option>
+        <option value="ODI" ${sq.format === 'ODI' ? 'selected' : ''}>ODI</option>
+        <option value="Practice" ${sq.format === 'Practice' ? 'selected' : ''}>Practice</option>
+      </select>
+      <button type="button" onclick="removeWizardSquadRow(${idx})" title="Remove squad" style="background:transparent; border:none; color:#EF4444; cursor:pointer; padding:4px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+  `).join('');
+}
+
+function addWizardSquadRow() {
+  const num = tmWizardSquadRows.length + 1;
+  tmWizardSquadRows.push({
+    name: `Squad ${num}`,
+    category: "Senior",
+    format: "T20",
+    status: "Active"
+  });
+  renderWizardSquadRows();
+}
+
+function removeWizardSquadRow(idx) {
+  if (tmWizardSquadRows.length > 1) {
+    tmWizardSquadRows.splice(idx, 1);
+    renderWizardSquadRows();
+  } else {
+    showTmToast("At least one squad row is maintained in immediate setup", "info");
+  }
+}
+
+function populateWizardReviewSummary() {
+  const name = (document.getElementById('wiz-team-name')?.value || 'New Team').trim();
+  const code = (document.getElementById('wiz-team-code')?.value || 'TM').trim().toUpperCase();
+  const cat = document.getElementById('wiz-team-category')?.value || "Senior Men's Team";
+  const venue = document.getElementById('wiz-venue')?.value || 'ACA Ground, Kakinada';
+  const pitch = document.getElementById('wiz-pitch')?.value || '20.12m Turf';
+  const season = document.getElementById('wiz-season')?.value || '2026/27';
+  const coach = document.getElementById('wiz-head-coach')?.value || 'Coach sandy';
+  const city = document.getElementById('wiz-city')?.value || 'Kakinada';
+  const state = document.getElementById('wiz-state')?.value || 'AP';
+  const crest = document.getElementById('wiz-selected-crest')?.value || 'tiger';
+
+  const rName = document.getElementById('review-team-name');
+  const rCode = document.getElementById('review-team-code');
+  const rCat = document.getElementById('review-team-category');
+  const rLoc = document.getElementById('review-team-location');
+  const rFmt = document.getElementById('review-formats-level');
+  const rVenue = document.getElementById('review-venue-pitch');
+  const rSeason = document.getElementById('review-season');
+  const rCoach = document.getElementById('review-coach');
+  const rCrestEmoji = document.getElementById('review-crest-emoji');
+  const rCrestBox = document.getElementById('review-crest-box');
+
+  if (rName) rName.textContent = name;
+  if (rCode) rCode.textContent = code;
+  if (rCat) rCat.textContent = cat;
+  if (rLoc) rLoc.textContent = `${city}, ${state}`;
+  if (rFmt) rFmt.textContent = `${tmWizardSelectedFormats.join(', ')} • Club Level`;
+  if (rVenue) rVenue.textContent = `${venue} • ${pitch}`;
+  if (rSeason) rSeason.textContent = season;
+  if (rCoach) rCoach.textContent = coach;
+
+  const emojiMap = { tiger: '🐅', eagle: '🦅', lion: '🦁', helmet: '⛑️' };
+  if (rCrestEmoji) rCrestEmoji.textContent = emojiMap[crest] || '🏏';
+  if (rCrestBox) {
+    rCrestBox.className = `tm-crest-box crest-${crest}`;
+  }
+
+  const squadsContainer = document.getElementById('review-squads-tags');
+  if (squadsContainer) {
+    squadsContainer.innerHTML = tmWizardSquadRows.map(s => 
+      `<span class="tm-format-tag">${escapeHtml(s.name)} (${s.format})</span>`
+    ).join('');
+  }
+}
+
+async function submitTeamWizard(isDraft = false) {
+  if (!validateCurrentStep(1)) {
+    setWizardStep(1);
+    return;
+  }
+
+  const name = document.getElementById('wiz-team-name').value.trim();
+  const code = (document.getElementById('wiz-team-code').value.trim() || name.substring(0, 3)).toUpperCase();
+  const cat = document.getElementById('wiz-team-category').value;
+  const age = document.getElementById('wiz-team-age-group').value;
+  const crest = document.getElementById('wiz-selected-crest').value || 'tiger';
+  const desc = document.getElementById('wiz-team-desc').value.trim();
+  const primaryFormat = document.getElementById('wiz-primary-format').value;
+  const playingLevel = document.getElementById('wiz-playing-level').value;
+  const season = document.getElementById('wiz-season').value;
+  const pitch = document.getElementById('wiz-pitch').value;
+  const venue = document.getElementById('wiz-venue').value;
+  const city = document.getElementById('wiz-city').value;
+  const state = document.getElementById('wiz-state').value;
+  const coach = document.getElementById('wiz-head-coach').value;
+  const asstCoach = document.getElementById('wiz-asst-coach').value;
+  const manager = document.getElementById('wiz-manager').value;
+  const analyst = document.getElementById('wiz-analyst').value;
+  const email = document.getElementById('wiz-email').value;
+  const phone = document.getElementById('wiz-phone').value;
+
+  const nextBtn = document.getElementById('wiz-btn-next');
+  if (nextBtn) {
+    nextBtn.disabled = true;
+    nextBtn.innerHTML = `<span>Saving...</span>`;
+  }
+
+  try {
+    if (tmWizardEditingTeamId) {
+      // Edit existing
+      const existingIdx = tmTeams.findIndex(t => t.id === tmWizardEditingTeamId);
+      if (existingIdx !== -1) {
+        tmTeams[existingIdx] = {
+          ...tmTeams[existingIdx],
+          name,
+          code,
+          category: cat,
+          age_group: age,
+          crest_type: crest,
+          description: desc,
+          primary_format: primaryFormat,
+          formats: [...tmWizardSelectedFormats],
+          playing_level: playingLevel,
+          season,
+          venue,
+          pitch_type: pitch,
+          city,
+          state,
+          location: `${city}, ${state}`,
+          head_coach: coach,
+          assistant_coach: asstCoach,
+          team_manager: manager,
+          analyst,
+          contact_email: email,
+          contact_phone: phone,
+          squads: [...tmWizardSquadRows],
+          squads_count: tmWizardSquadRows.length,
+          updated_at: "Just now"
+        };
+        showTmToast(`Team "${name}" updated successfully`, "success");
+      }
+    } else {
+      // Create new
+      const newId = `team_${Date.now()}`;
+      const newTeam = {
+        id: newId,
+        name,
+        code,
+        status: isDraft ? "archived" : "active",
+        category: cat,
+        age_group: age,
+        crest_type: crest,
+        crest_color: crest === 'tiger' ? '#F59E0B' : (crest === 'eagle' ? '#38BDF8' : (crest === 'lion' ? '#EF4444' : '#10B981')),
+        location: `${city}, ${state}`,
+        city,
+        state,
+        country: "India",
+        primary_format: primaryFormat,
+        formats: [...tmWizardSelectedFormats],
+        playing_level: playingLevel,
+        season,
+        venue,
+        pitch_type: pitch,
+        description: desc,
+        head_coach: coach,
+        assistant_coach: asstCoach,
+        team_manager: manager,
+        analyst,
+        contact_email: email,
+        contact_phone: phone,
+        players_count: 0,
+        squads_count: tmWizardSquadRows.length,
+        sessions_count: 0,
+        active_players_pct: 100,
+        squads: [...tmWizardSquadRows],
+        last_session: {
+          title: "Session Setup Pending",
+          time: "Never",
+          thumbnail: "/samples/sample_3_match_view.png"
+        },
+        created_at: "Just now",
+        created_ts: Math.floor(Date.now() / 1000),
+        updated_at: "Just now"
+      };
+
+      tmTeams.unshift(newTeam);
+      showTmToast(`New team "${name}" created successfully!`, "success");
+    }
+
+    saveTmTeamsData();
+    closeTeamWizard();
+    renderTmSummaryCards();
+    renderTeamsGrid();
+
+  } catch (err) {
+    showTmToast("Error saving team: " + err.message, "error");
+  } finally {
+    if (nextBtn) {
+      nextBtn.disabled = false;
+    }
+  }
+}
+
+// ----------------------------------------------------------------------------
+// ARCHIVE & RESTORE WORKFLOW
+// ----------------------------------------------------------------------------
+
+function toggleArchiveTeam(teamId) {
+  const team = tmTeams.find(t => t.id === teamId);
+  if (!team) return;
+
+  tmTargetActionTeamId = teamId;
+  const isArchived = team.status === 'archived';
+
+  const modal = document.getElementById('modal-team-archive');
+  const title = document.getElementById('archive-modal-title');
+  const desc = document.getElementById('archive-modal-desc');
+  const nameSpan = document.getElementById('archive-team-target-name');
+  const confirmBtn = document.getElementById('btn-confirm-archive');
+
+  if (title) title.textContent = isArchived ? 'Restore Team?' : 'Archive Team?';
+  if (nameSpan) nameSpan.textContent = team.name;
+  if (confirmBtn) {
+    confirmBtn.textContent = isArchived ? 'Restore to Active' : 'Archive Team';
+    confirmBtn.style.background = isArchived ? '#00C58A' : '#2685F5';
+    confirmBtn.style.borderColor = isArchived ? '#00C58A' : '#2685F5';
+  }
+
+  if (desc) {
+    if (isArchived) {
+      desc.innerHTML = `Restore <strong>${escapeHtml(team.name)}</strong> back to the Active Teams list? All squads and historical data will be immediately active.`;
+    } else {
+      desc.innerHTML = `Are you sure you want to archive <strong>${escapeHtml(team.name)}</strong>? It will be moved to the Archived view. All associated players, squads and session records will be safely preserved.`;
+    }
+  }
+
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeArchiveModal() {
+  const modal = document.getElementById('modal-team-archive');
+  if (modal) modal.classList.add('hidden');
+}
+
+function executeArchiveTeam() {
+  if (!tmTargetActionTeamId) return;
+  const team = tmTeams.find(t => t.id === tmTargetActionTeamId);
+  if (!team) return;
+
+  const wasArchived = team.status === 'archived';
+  team.status = wasArchived ? 'active' : 'archived';
+  team.updated_at = "Just now";
+
+  saveTmTeamsData();
+  closeArchiveModal();
+  renderTmSummaryCards();
+  renderTeamsGrid();
+
+  showTmToast(`Team "${team.name}" has been ${wasArchived ? 'restored to Active' : 'moved to Archived'}`, "success");
+}
+
+// ----------------------------------------------------------------------------
+// DESTRUCTIVE DELETE TEAM WORKFLOW
+// ----------------------------------------------------------------------------
+
+function promptDeleteTeam(teamId) {
+  const team = tmTeams.find(t => t.id === teamId);
+  if (!team) return;
+
+  tmTargetActionTeamId = teamId;
+  const modal = document.getElementById('modal-team-delete');
+  const nameSpan = document.getElementById('delete-team-target-name');
+  const sqCount = document.getElementById('del-squad-count');
+  const plCount = document.getElementById('del-player-count');
+  const sessCount = document.getElementById('del-session-count');
+
+  if (nameSpan) nameSpan.textContent = team.name;
+  if (sqCount) sqCount.textContent = team.squads_count || 1;
+  if (plCount) plCount.textContent = team.players_count || 0;
+  if (sessCount) sessCount.textContent = team.sessions_count || 0;
+
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeDeleteTeamModal() {
+  const modal = document.getElementById('modal-team-delete');
+  if (modal) modal.classList.add('hidden');
+}
+
+function executeDeleteTeam() {
+  if (!tmTargetActionTeamId) return;
+  const team = tmTeams.find(t => t.id === tmTargetActionTeamId);
+  const name = team ? team.name : 'Team';
+
+  tmTeams = tmTeams.filter(t => t.id !== tmTargetActionTeamId);
+  saveTmTeamsData();
+  closeDeleteTeamModal();
+  renderTmSummaryCards();
+  renderTeamsGrid();
+
+  showTmToast(`Team "${name}" deleted`, "error");
+}
+
+// ----------------------------------------------------------------------------
+// SQUADS & SETTINGS MODALS
+// ----------------------------------------------------------------------------
+
+function openManageSquadsModal(teamId) {
+  const team = tmTeams.find(t => t.id === teamId);
+  if (!team) return;
+
+  tmTargetActionTeamId = teamId;
+  const modal = document.getElementById('modal-manage-squads');
+  const title = document.getElementById('ms-team-title');
+  if (title) title.textContent = `${team.name} — Squads`;
+
+  renderManageSquadsList(team);
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeManageSquadsModal() {
+  const modal = document.getElementById('modal-manage-squads');
+  if (modal) modal.classList.add('hidden');
+}
+
+function renderManageSquadsList(team) {
+  const list = document.getElementById('ms-squads-list');
+  if (!list) return;
+
+  const squads = Array.isArray(team.squads) && team.squads.length > 0 
+    ? team.squads 
+    : [{ id: "sq_default", name: "Main Squad", category: "Senior", format: "T20", status: "Active" }];
+
+  list.innerHTML = squads.map((s, idx) => `
+    <div style="background:#1E2027; border:1px solid #343741; border-radius:10px; padding:12px 14px; display:flex; align-items:center; justify-content:space-between;">
+      <div>
+        <div style="font-size:13.5px; font-weight:700; color:#FFFFFF;">${escapeHtml(s.name)}</div>
+        <div style="font-size:11px; color:#A4AAB8; margin-top:2px;">${escapeHtml(s.category || 'General')} • ${escapeHtml(s.format || 'T20')}</div>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span class="tm-status-pill status-active" style="font-size:10px;">${escapeHtml(s.status || 'Active')}</span>
+        <button type="button" onclick="deleteSquadFromTeam('${team.id}', ${idx})" style="background:transparent; border:none; color:#EF4444; cursor:pointer;" title="Delete Squad">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function submitAddNewSquad() {
+  const nameInput = document.getElementById('ms-new-squad-name');
+  const formatInput = document.getElementById('ms-new-squad-format');
+  if (!nameInput || !nameInput.value.trim()) {
+    showTmToast("Please enter a squad name", "info");
+    return;
+  }
+
+  const team = tmTeams.find(t => t.id === tmTargetActionTeamId);
+  if (!team) return;
+
+  if (!Array.isArray(team.squads)) team.squads = [];
+  team.squads.push({
+    id: `sq_${Date.now()}`,
+    name: nameInput.value.trim(),
+    category: team.category || "General",
+    format: formatInput ? formatInput.value : "T20",
+    status: "Active"
+  });
+  team.squads_count = team.squads.length;
+
+  saveTmTeamsData();
+  nameInput.value = '';
+  renderManageSquadsList(team);
+  renderTmSummaryCards();
+  renderTeamsGrid();
+  showTmToast("New squad added to team", "success");
+}
+
+function deleteSquadFromTeam(teamId, squadIdx) {
+  const team = tmTeams.find(t => t.id === teamId);
+  if (!team || !Array.isArray(team.squads)) return;
+
+  team.squads.splice(squadIdx, 1);
+  team.squads_count = team.squads.length;
+  saveTmTeamsData();
+  renderManageSquadsList(team);
+  renderTmSummaryCards();
+  renderTeamsGrid();
+  showTmToast("Squad removed", "info");
+}
+
+function openTeamSettingsModal(teamId) {
+  const team = tmTeams.find(t => t.id === teamId);
+  if (!team) return;
+
+  tmTargetActionTeamId = teamId;
+  const modal = document.getElementById('modal-team-settings');
+  const title = document.getElementById('ts-team-title');
+  const nameInp = document.getElementById('ts-team-name-input');
+  const venueInp = document.getElementById('ts-team-venue-input');
+  const pitchSel = document.getElementById('ts-team-pitch-select');
+  const archBtn = document.getElementById('ts-archive-btn');
+
+  if (title) title.textContent = `${team.name} — Settings`;
+  if (nameInp) nameInp.value = team.name || '';
+  if (venueInp) venueInp.value = team.venue || '';
+  if (pitchSel) pitchSel.value = team.pitch_type || '20.12m Turf';
+  if (archBtn) archBtn.textContent = team.status === 'archived' ? 'Restore Team' : 'Archive Team';
+
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeTeamSettingsModal() {
+  const modal = document.getElementById('modal-team-settings');
+  if (modal) modal.classList.add('hidden');
+}
+
+function saveTeamSettings() {
+  const team = tmTeams.find(t => t.id === tmTargetActionTeamId);
+  if (!team) return;
+
+  const nameInp = document.getElementById('ts-team-name-input');
+  const venueInp = document.getElementById('ts-team-venue-input');
+  const pitchSel = document.getElementById('ts-team-pitch-select');
+
+  if (nameInp && nameInp.value.trim()) team.name = nameInp.value.trim();
+  if (venueInp) team.venue = venueInp.value.trim();
+  if (pitchSel) team.pitch_type = pitchSel.value;
+  team.updated_at = "Just now";
+
+  saveTmTeamsData();
+  closeTeamSettingsModal();
+  renderTmSummaryCards();
+  renderTeamsGrid();
+  showTmToast("Settings saved successfully", "success");
+}
+
+function archiveFromSettings() {
+  closeTeamSettingsModal();
+  toggleArchiveTeam(tmTargetActionTeamId);
+}
+
+function deleteFromSettings() {
+  closeTeamSettingsModal();
+  promptDeleteTeam(tmTargetActionTeamId);
+}
+
+// ----------------------------------------------------------------------------
+// TOAST NOTIFICATION UTILITY
+// ----------------------------------------------------------------------------
+
+function showTmToast(message, type = 'info', duration = 3000) {
+  const container = document.getElementById('trajecta-toast-container');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = `tm-toast toast-${type}`;
+  
+  let icon = `ℹ️`;
+  if (type === 'success') icon = `✅`;
+  else if (type === 'error') icon = `⚠️`;
+
+  toast.innerHTML = `
+    <span style="font-size:16px;">${icon}</span>
+    <span class="tm-toast-msg">${escapeHtml(message)}</span>
+    <button type="button" style="background:transparent; border:none; color:#7E8694; cursor:pointer; font-size:16px;" onclick="this.parentElement.remove()">&times;</button>
+  `;
+
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(40px)';
+    setTimeout(() => toast.remove(), 250);
+  }, duration);
+}
+
+
+function openNewTeamModal() { openNewTeamWizard(); }
+function closeNewTeamModal() { closeTeamWizard(); }
+
 // VIEW 2: PLAYER ROSTER
 // ----------------------------------------------------------------------------
 async function openTeamRoster(teamId) {

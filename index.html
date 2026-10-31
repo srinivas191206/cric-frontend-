@@ -206,35 +206,140 @@
         <!-- ========================================================
              FULLTRACK AI WORKFLOW VIEW 1: "YOUR TEAMS" HUB
         ======================================================== -->
+        <!-- ========================================================
+             TRAJECTA.AI TEAMS & SQUADS MANAGEMENT HUB (REDESIGNED)
+        ======================================================== -->
         <section id="view-teams-hub" class="dashboard-view-panel hidden">
-          <!-- Amber-Bordered Top Hero Banner -->
-          <div class="teams-hub-card">
-            <div class="th-content-row">
-              <div class="th-title-area">
-                <h2 class="th-main-title">Your Teams</h2>
-                <p class="th-sub-title">Select a team to manage players and review sessions</p>
-              </div>
-              <div class="th-action-controls">
-                <div class="th-search-box">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                  <input type="text" id="teams-search-field" placeholder="Search teams..." oninput="onTeamsSearchInput(this.value)" />
+          <!-- 1. Hero Banner: Title & 4 Summary KPI Cards -->
+          <div class="teams-mgmt-hero">
+            <div class="tm-hero-left">
+              <span class="tm-badge-overline">TEAM MANAGEMENT</span>
+              <h1 class="tm-hero-title">Your Teams</h1>
+              <p class="tm-hero-sub">Manage your cricket teams, squads, players and training sessions</p>
+            </div>
+            
+            <!-- 4 Summary KPI Cards -->
+            <div class="tm-summary-grid" id="tm-summary-grid">
+              <div class="tm-summary-card">
+                <div class="tm-icon-box icon-red">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 </div>
-                <span class="th-refresh-status" id="teams-refreshed-time">Last refreshed just now</span>
-                <button type="button" class="btn-th-refresh" onclick="fetchAndRenderTeams()" title="Refresh Teams List">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-                  <span>Refresh</span>
-                </button>
-                <button type="button" class="btn-th-create-team" onclick="openNewTeamModal()">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                  <span>New Team</span>
-                </button>
+                <div class="tm-sc-meta">
+                  <span class="tm-sc-label">Total Teams</span>
+                  <span class="tm-sc-val" id="summary-total-teams">4</span>
+                  <span class="tm-sc-sub" id="summary-teams-sub">2 Active + 2 Archived</span>
+                </div>
+              </div>
+
+              <div class="tm-summary-card">
+                <div class="tm-icon-box icon-blue">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+                <div class="tm-sc-meta">
+                  <span class="tm-sc-label">Total Players</span>
+                  <span class="tm-sc-val" id="summary-total-players">68</span>
+                  <span class="tm-sc-sub" id="summary-players-sub">Across all teams</span>
+                </div>
+              </div>
+
+              <div class="tm-summary-card">
+                <div class="tm-icon-box icon-green">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
+                </div>
+                <div class="tm-sc-meta">
+                  <span class="tm-sc-label">Total Squads</span>
+                  <span class="tm-sc-val" id="summary-total-squads">8</span>
+                  <span class="tm-sc-sub" id="summary-squads-sub">Senior + Junior + Academy</span>
+                </div>
+              </div>
+
+              <div class="tm-summary-card">
+                <div class="tm-icon-box icon-purple">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                </div>
+                <div class="tm-sc-meta">
+                  <span class="tm-sc-label">Total Sessions</span>
+                  <span class="tm-sc-val" id="summary-total-sessions">24</span>
+                  <span class="tm-sc-sub" id="summary-sessions-sub">Last 30 days</span>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Teams Cards Grid -->
-          <div class="teams-roster-grid" id="teams-roster-grid">
-            <!-- Dynamically populated team cards -->
+          <!-- 2. Team Management Toolbar -->
+          <div class="teams-mgmt-toolbar">
+            <div class="tm-toolbar-left">
+              <!-- Search teams, squads or coaches -->
+              <div class="tm-search-box">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="tm-search-input" class="tm-search-input" placeholder="Search teams, squads or coaches..." oninput="onTmSearchInput(this.value)" />
+                <button type="button" id="tm-search-clear" class="tm-search-clear hidden" onclick="clearTmSearch()" title="Clear search">&times;</button>
+              </div>
+
+              <!-- Filter Tabs: All Teams, Active, Archived -->
+              <div class="tm-filter-tabs">
+                <button type="button" class="tm-filter-pill active" id="filter-all-teams" onclick="setTmFilter('all')">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                  <span>All Teams</span>
+                  <span class="tm-pill-count" id="count-all-teams">(4)</span>
+                </button>
+                <button type="button" class="tm-filter-pill" id="filter-active-teams" onclick="setTmFilter('active')">
+                  <span class="tm-dot-indicator"></span>
+                  <span>Active</span>
+                  <span class="tm-pill-count" id="count-active-teams">(2)</span>
+                </button>
+                <button type="button" class="tm-filter-pill" id="filter-archived-teams" onclick="setTmFilter('archived')">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+                  <span>Archived</span>
+                  <span class="tm-pill-count" id="count-archived-teams">(2)</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="tm-toolbar-right">
+              <!-- Cricket Format Dropdown -->
+              <div class="tm-select-wrap">
+                <select id="tm-format-filter" class="tm-select" onchange="onTmFormatChange(this.value)">
+                  <option value="all">All Formats</option>
+                  <option value="T20">T20</option>
+                  <option value="ODI">ODI</option>
+                  <option value="Test">Test</option>
+                  <option value="Practice">Practice</option>
+                  <option value="Academy">Academy</option>
+                </select>
+                <svg class="tm-select-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
+
+              <!-- Sorting Dropdown -->
+              <div class="tm-select-wrap">
+                <select id="tm-sort-select" class="tm-select" onchange="onTmSortChange(this.value)">
+                  <option value="updated">Recently Updated</option>
+                  <option value="name-asc">Team Name A–Z</option>
+                  <option value="name-desc">Team Name Z–A</option>
+                  <option value="players">Most Players</option>
+                  <option value="sessions">Most Sessions</option>
+                  <option value="created">Recently Created</option>
+                </select>
+                <svg class="tm-select-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
+
+              <!-- Refresh Button -->
+              <button type="button" class="tm-btn-refresh" id="tm-refresh-btn" onclick="refreshTmTeams()" title="Refresh Teams Data">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                <span>Refresh</span>
+              </button>
+
+              <!-- New Team CTA Button -->
+              <button type="button" class="tm-btn-new-team" onclick="openNewTeamWizard()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span>New Team</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 3. Teams Cards Grid (3 Columns) -->
+          <div class="tm-teams-grid" id="teams-roster-grid">
+            <!-- Dynamically populated team cards + "+ Create a New Team" dashed card -->
           </div>
         </section>
 
@@ -2247,29 +2352,454 @@
     </div>
   </div>
 
-  <!-- NEW TEAM MODAL -->
-  <div id="new-team-modal" class="custom-modal-backdrop hidden" onclick="if(event.target===this) closeNewTeamModal()">
-    <div class="new-entity-modal-card">
-      <div class="new-entity-header">
-        <h3>Create New Team</h3>
-        <button type="button" class="btn-close-modal" onclick="closeNewTeamModal()">&times;</button>
+  <!-- ========================================================
+       TEAM MANAGEMENT MODULE: WIZARDS & MODALS
+  ======================================================== -->
+
+  <!-- 1. MULTI-STEP NEW TEAM / EDIT TEAM WIZARD MODAL -->
+  <div id="modal-team-wizard" class="custom-modal-backdrop hidden" onclick="if(event.target===this) closeTeamWizard()">
+    <div class="tm-modal-card">
+      <!-- Wizard Header -->
+      <div class="tm-modal-header">
+        <div>
+          <span class="custom-modal-badge" id="wizard-badge-label">TEAM ONBOARDING</span>
+          <h3 class="tm-modal-title" id="wizard-title-label">Create a New Cricket Team</h3>
+          <p class="tm-modal-subtitle" id="wizard-subtitle-label">Complete the 5-step setup to establish your team profile, configuration and squads.</p>
+        </div>
+        <button type="button" class="btn-close-modal" onclick="closeTeamWizard()">&times;</button>
       </div>
-      <form id="new-team-form" onsubmit="event.preventDefault(); submitCreateTeam();">
-        <div class="form-group-field">
-          <label for="new-team-name-input">Team Name *</label>
-          <input type="text" id="new-team-name-input" class="input-light" placeholder="e.g. TRAJECTA Elite, Mumbai Ranji Squad" required />
+
+      <!-- 5-Step Progress Stepper -->
+      <div class="tm-stepper">
+        <div class="tm-step-item active" id="step-node-1" onclick="jumpToWizardStep(1)">
+          <div class="tm-step-num">1</div>
+          <span class="tm-step-name">Basic Info</span>
         </div>
-        <div class="form-group-field">
-          <label for="new-team-desc-input">Description / Academy Note</label>
-          <input type="text" id="new-team-desc-input" class="input-light" placeholder="e.g. High Performance Camp" />
+        <div class="tm-step-divider"></div>
+        <div class="tm-step-item" id="step-node-2" onclick="jumpToWizardStep(2)">
+          <div class="tm-step-num">2</div>
+          <span class="tm-step-name">Cricket Config</span>
         </div>
-        <div class="entity-modal-actions">
-          <button type="button" class="btn-modal-cancel" onclick="closeNewTeamModal()">Cancel</button>
-          <button type="submit" class="btn-modal-submit">Create Team</button>
+        <div class="tm-step-divider"></div>
+        <div class="tm-step-item" id="step-node-3" onclick="jumpToWizardStep(3)">
+          <div class="tm-step-num">3</div>
+          <span class="tm-step-name">Administration</span>
         </div>
+        <div class="tm-step-divider"></div>
+        <div class="tm-step-item" id="step-node-4" onclick="jumpToWizardStep(4)">
+          <div class="tm-step-num">4</div>
+          <span class="tm-step-name">Squad Setup</span>
+        </div>
+        <div class="tm-step-divider"></div>
+        <div class="tm-step-item" id="step-node-5" onclick="jumpToWizardStep(5)">
+          <div class="tm-step-num">5</div>
+          <span class="tm-step-name">Review &amp; Create</span>
+        </div>
+      </div>
+
+      <!-- Wizard Body Content -->
+      <form id="team-wizard-form" class="tm-modal-body" onsubmit="event.preventDefault(); submitTeamWizard(false);">
+        
+        <!-- STEP 1: BASIC TEAM INFORMATION -->
+        <div class="wizard-step-pane" id="wizard-step-1">
+          <div class="tm-form-grid">
+            <div class="tm-form-group">
+              <label class="tm-form-label" for="wiz-team-name">Team Name <span class="req">*</span></label>
+              <input type="text" id="wiz-team-name" class="tm-form-input" placeholder="e.g. Coastal Warriors, Mumbai Strikers" required oninput="validateStep1()" />
+              <span class="tm-field-error hidden" id="err-team-name">Team name is required.</span>
+            </div>
+
+            <div class="tm-form-group">
+              <label class="tm-form-label" for="wiz-team-code">Short Name / Code</label>
+              <input type="text" id="wiz-team-code" class="tm-form-input" placeholder="e.g. CW, STU (2–4 letters)" maxlength="6" style="text-transform: uppercase;" />
+            </div>
+
+            <div class="tm-form-group">
+              <label class="tm-form-label">Team Category <span class="req">*</span></label>
+              <select id="wiz-team-category" class="tm-form-select" required>
+                <option value="Senior Men's Team">Men's Team</option>
+                <option value="Senior Women's Team">Women's Team</option>
+                <option value="Junior Development">Junior Development</option>
+                <option value="Mixed Squad">Mixed Squad</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div class="tm-form-group">
+              <label class="tm-form-label">Age Group</label>
+              <select id="wiz-team-age-group" class="tm-form-select">
+                <option value="Senior">Senior</option>
+                <option value="Under 19">Under 19</option>
+                <option value="Under 16">Under 16</option>
+                <option value="Under 14">Under 14</option>
+                <option value="Under 12">Under 12</option>
+                <option value="Custom">Custom</option>
+              </select>
+            </div>
+
+            <div class="tm-form-group" style="grid-column: 1 / -1;">
+              <label class="tm-form-label">Team Crest / Mascot Crest</label>
+              <div class="tm-mascot-picker" id="wiz-mascot-picker">
+                <div class="tm-mascot-opt selected" data-crest="tiger" onclick="selectWizardMascot('tiger')" title="Tiger Mascot">
+                  <span style="color:#F59E0B; font-weight:800; font-size:18px;">🐅</span>
+                </div>
+                <div class="tm-mascot-opt" data-crest="eagle" onclick="selectWizardMascot('eagle')" title="Eagle Mascot">
+                  <span style="color:#38BDF8; font-weight:800; font-size:18px;">🦅</span>
+                </div>
+                <div class="tm-mascot-opt" data-crest="lion" onclick="selectWizardMascot('lion')" title="Lion Mascot">
+                  <span style="color:#EF4444; font-weight:800; font-size:18px;">🦁</span>
+                </div>
+                <div class="tm-mascot-opt" data-crest="helmet" onclick="selectWizardMascot('helmet')" title="Cricket Helmet">
+                  <span style="color:#10B981; font-weight:800; font-size:18px;">⛑️</span>
+                </div>
+              </div>
+              <input type="hidden" id="wiz-selected-crest" value="tiger" />
+            </div>
+
+            <div class="tm-form-group" style="grid-column: 1 / -1;">
+              <label class="tm-form-label" for="wiz-team-desc">Team Description</label>
+              <textarea id="wiz-team-desc" class="tm-form-textarea" rows="2" placeholder="Brief summary of the squad, goals and academy mandate..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 2: CRICKET CONFIGURATION -->
+        <div class="wizard-step-pane hidden" id="wizard-step-2">
+          <div class="tm-form-grid">
+            <div class="tm-form-group">
+              <label class="tm-form-label">Primary Cricket Format <span class="req">*</span></label>
+              <select id="wiz-primary-format" class="tm-form-select">
+                <option value="T20">T20 (20 Overs)</option>
+                <option value="ODI">One Day International (50 Overs)</option>
+                <option value="Test">Multi-Day / Test</option>
+                <option value="Practice">Practice &amp; Net Sessions</option>
+                <option value="Custom">Custom Tournament</option>
+              </select>
+            </div>
+
+            <div class="tm-form-group">
+              <label class="tm-form-label">Team Playing Level</label>
+              <select id="wiz-playing-level" class="tm-form-select">
+                <option value="Club">Club Cricket</option>
+                <option value="Professional">Professional / Franchise</option>
+                <option value="State">State / First Class</option>
+                <option value="District">District / Regional</option>
+                <option value="Academy">Cricket Academy</option>
+                <option value="School / College">School / University</option>
+                <option value="Recreational">Recreational</option>
+              </select>
+            </div>
+
+            <div class="tm-form-group" style="grid-column: 1 / -1;">
+              <label class="tm-form-label">Supported Formats (Multi-Select)</label>
+              <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:4px;" id="wiz-formats-tags">
+                <button type="button" class="tm-filter-pill active" data-fmt="T20" onclick="toggleWizardFormat(this, 'T20')">T20</button>
+                <button type="button" class="tm-filter-pill active" data-fmt="ODI" onclick="toggleWizardFormat(this, 'ODI')">ODI</button>
+                <button type="button" class="tm-filter-pill" data-fmt="Test" onclick="toggleWizardFormat(this, 'Test')">Test</button>
+                <button type="button" class="tm-filter-pill" data-fmt="Practice" onclick="toggleWizardFormat(this, 'Practice')">Practice</button>
+                <button type="button" class="tm-filter-pill" data-fmt="Academy" onclick="toggleWizardFormat(this, 'Academy')">Academy</button>
+              </div>
+            </div>
+
+            <div class="tm-form-group">
+              <label class="tm-form-label" for="wiz-season">Season / Year</label>
+              <input type="text" id="wiz-season" class="tm-form-input" value="2026/27" />
+            </div>
+
+            <div class="tm-form-group">
+              <label class="tm-form-label" for="wiz-pitch">Default Pitch Setup</label>
+              <select id="wiz-pitch" class="tm-form-select">
+                <option value="20.12m Turf">20.12m Full Turf (MCC Standard)</option>
+                <option value="18m Junior Turf">18m Junior Turf</option>
+                <option value="AstroTurf">AstroTurf Synthetic</option>
+                <option value="Matting">Coir Matting</option>
+                <option value="Indoor Cement">Indoor Concrete / Speed Strip</option>
+              </select>
+            </div>
+
+            <div class="tm-form-group" style="grid-column: 1 / -1;">
+              <label class="tm-form-label" for="wiz-venue">Home Ground / Training Venue</label>
+              <input type="text" id="wiz-venue" class="tm-form-input" placeholder="e.g. ACA Cricket Ground, Kakinada Port Facility" />
+            </div>
+
+            <div class="tm-form-group">
+              <label class="tm-form-label" for="wiz-city">City</label>
+              <input type="text" id="wiz-city" class="tm-form-input" value="Kakinada" />
+            </div>
+
+            <div class="tm-form-group">
+              <label class="tm-form-label" for="wiz-state">State / Province</label>
+              <input type="text" id="wiz-state" class="tm-form-input" value="Andhra Pradesh" />
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 3: TEAM ADMINISTRATION -->
+        <div class="wizard-step-pane hidden" id="wizard-step-3">
+          <div class="tm-form-grid">
+            <div class="tm-form-group">
+              <label class="tm-form-label" for="wiz-head-coach">Head Coach</label>
+              <input type="text" id="wiz-head-coach" class="tm-form-input" placeholder="e.g. Coach sandy" />
+            </div>
+
+            <div class="tm-form-group">
+              <label class="tm-form-label" for="wiz-asst-coach">Assistant Coach</label>
+              <input type="text" id="wiz-asst-coach" class="tm-form-input" placeholder="e.g. Coach R. Kumar" />
+            </div>
+
+            <div class="tm-form-group">
+              <label class="tm-form-label" for="wiz-manager">Team Manager</label>
+              <input type="text" id="wiz-manager" class="tm-form-input" placeholder="e.g. V. Srinivas" />
+            </div>
+
+            <div class="tm-form-group">
+              <label class="tm-form-label" for="wiz-analyst">Performance Analyst</label>
+              <input type="text" id="wiz-analyst" class="tm-form-input" placeholder="e.g. TRAJECTA AI Neural Ops" />
+            </div>
+
+            <div class="tm-form-group">
+              <label class="tm-form-label" for="wiz-email">Contact Email</label>
+              <input type="email" id="wiz-email" class="tm-form-input" placeholder="team@trajecta.cricket" />
+            </div>
+
+            <div class="tm-form-group">
+              <label class="tm-form-label" for="wiz-phone">Contact Number</label>
+              <input type="tel" id="wiz-phone" class="tm-form-input" placeholder="+91 98765 43210" />
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 4: SQUAD SETUP -->
+        <div class="wizard-step-pane hidden" id="wizard-step-4">
+          <div style="background:#15161B; border:1px solid #343741; border-radius:12px; padding:16px 20px; margin-bottom:18px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+              <span style="font-size:13px; font-weight:700; color:#FFFFFF;">Squad Initialization Mode</span>
+            </div>
+            <div style="display:flex; gap:16px;">
+              <label style="display:flex; align-items:center; gap:8px; color:#A4AAB8; font-size:12.5px; cursor:pointer;">
+                <input type="radio" name="wiz-squad-mode" value="none" onchange="toggleWizardSquadMode('none')" />
+                <span>Create team without squads (set up later)</span>
+              </label>
+              <label style="display:flex; align-items:center; gap:8px; color:#FFFFFF; font-size:12.5px; cursor:pointer;">
+                <input type="radio" name="wiz-squad-mode" value="immediate" checked onchange="toggleWizardSquadMode('immediate')" />
+                <span style="font-weight:600;">Create squads immediately</span>
+              </label>
+            </div>
+          </div>
+
+          <div id="wiz-squads-container">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+              <span class="tm-form-label">Squads to be created</span>
+              <button type="button" class="btn-tm-secondary" onclick="addWizardSquadRow()" style="padding:4px 10px; font-size:11px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span>Add Another Squad</span>
+              </button>
+            </div>
+            
+            <div id="wiz-squads-list" style="display:flex; flex-direction:column; gap:10px;">
+              <!-- Dynamic Squad Rows -->
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 5: REVIEW AND CREATE -->
+        <div class="wizard-step-pane hidden" id="wizard-step-5">
+          <div style="background:#15161B; border:1px solid #343741; border-radius:14px; padding:20px; display:flex; flex-direction:column; gap:16px;">
+            <!-- Review Team Header -->
+            <div style="display:flex; align-items:center; gap:14px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:14px;">
+              <div id="review-crest-box" class="tm-crest-box crest-tiger" style="width:52px; height:52px;">
+                <span id="review-crest-emoji" style="font-size:22px;">🐅</span>
+              </div>
+              <div style="flex:1;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <h4 id="review-team-name" style="font-size:18px; font-weight:800; color:#FFFFFF; margin:0;">Coastal Warriors</h4>
+                  <span id="review-team-code" class="tm-format-tag" style="font-size:11px;">CW</span>
+                  <span class="tm-status-pill status-active">Active</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px; margin-top:4px;">
+                  <span id="review-team-category" style="font-size:12px; color:#A4AAB8;">Senior Men's Team</span>
+                  <span style="color:#7E8694;">•</span>
+                  <span id="review-team-location" style="font-size:12px; color:#7E8694;">Kakinada, AP</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Details Grid -->
+            <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:12px; font-size:12px;">
+              <div>
+                <span style="color:#7E8694; display:block; margin-bottom:2px;">FORMATS &amp; LEVEL</span>
+                <span id="review-formats-level" style="color:#FFFFFF; font-weight:600;">T20, ODI • Club</span>
+              </div>
+              <div>
+                <span style="color:#7E8694; display:block; margin-bottom:2px;">HOME GROUND &amp; PITCH</span>
+                <span id="review-venue-pitch" style="color:#FFFFFF; font-weight:600;">ACA Ground, Kakinada • 20.12m Turf</span>
+              </div>
+              <div>
+                <span style="color:#7E8694; display:block; margin-bottom:2px;">SEASON / YEAR</span>
+                <span id="review-season" style="color:#FFFFFF; font-weight:600;">2026/27</span>
+              </div>
+              <div>
+                <span style="color:#7E8694; display:block; margin-bottom:2px;">HEAD COACH</span>
+                <span id="review-coach" style="color:#FFFFFF; font-weight:600;">Coach sandy</span>
+              </div>
+            </div>
+
+            <!-- Squads Breakdown -->
+            <div style="border-top:1px solid rgba(255,255,255,0.08); padding-top:12px;">
+              <span style="color:#7E8694; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; display:block; margin-bottom:6px;">SQUADS INITIALIZED</span>
+              <div id="review-squads-tags" style="display:flex; gap:6px; flex-wrap:wrap;">
+                <span class="tm-format-tag">Senior Men's First XI</span>
+                <span class="tm-format-tag">T20 Blitz Squad</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </form>
+
+      <!-- Wizard Navigation Footer -->
+      <div class="tm-modal-footer">
+        <button type="button" class="btn-modal-cancel" id="wiz-btn-prev" onclick="prevWizardStep()" style="visibility:hidden;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+          <span>Back</span>
+        </button>
+
+        <div class="tm-footer-right">
+          <button type="button" class="btn-tm-secondary" onclick="submitTeamWizard(true)">Save as Draft</button>
+          <button type="button" class="tm-btn-new-team" id="wiz-btn-next" onclick="nextWizardStep()">
+            <span>Continue</span>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+      </div>
     </div>
   </div>
+
+  <!-- 2. ARCHIVE / RESTORE CONFIRMATION MODAL -->
+  <div id="modal-team-archive" class="custom-modal-backdrop hidden" onclick="if(event.target===this) closeArchiveModal()">
+    <div class="delete-modal-card" style="border-color:#38BDF8;">
+      <div class="delete-modal-icon" id="archive-modal-icon" style="background:rgba(56,189,248,0.15); color:#38BDF8;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+      </div>
+      <h3 class="delete-modal-title" id="archive-modal-title">Archive Team?</h3>
+      <p class="delete-modal-desc" id="archive-modal-desc">
+        Are you sure you want to archive <strong id="archive-team-target-name">Team</strong>? It will be moved to the Archived view. All associated players, squads and session records will be safely preserved.
+      </p>
+      <div class="delete-modal-actions">
+        <button type="button" class="btn-modal-cancel" onclick="closeArchiveModal()">Cancel</button>
+        <button type="button" class="tm-btn-new-team" id="btn-confirm-archive" onclick="executeArchiveTeam()" style="background:#2685F5; border-color:#2685F5;">Archive Team</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. DESTRUCTIVE DELETE CONFIRMATION MODAL -->
+  <div id="modal-team-delete" class="custom-modal-backdrop hidden" onclick="if(event.target===this) closeDeleteTeamModal()">
+    <div class="delete-modal-card">
+      <div class="delete-modal-icon" style="background:rgba(239,68,68,0.15); color:#EF4444;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+      </div>
+      <h3 class="delete-modal-title">Permanently Delete Team?</h3>
+      <p class="delete-modal-desc" id="delete-team-desc">
+        Are you sure you want to delete <strong id="delete-team-target-name">Team</strong>?
+      </p>
+      
+      <!-- Affected items summary -->
+      <div style="background:#15161B; border:1px solid #343741; border-radius:10px; padding:12px; margin:14px 0; text-align:left; font-size:12px;">
+        <div style="color:#EF4444; font-weight:700; margin-bottom:6px;">⚠️ This destructive action will affect:</div>
+        <div style="color:#E2E8F0; display:flex; flex-direction:column; gap:4px;">
+          <span>• <strong id="del-squad-count">3</strong> associated squads</span>
+          <span>• <strong id="del-player-count">18</strong> registered players</span>
+          <span>• <strong id="del-session-count">12</strong> recorded bowling sessions</span>
+        </div>
+      </div>
+
+      <div class="delete-modal-actions">
+        <button type="button" class="btn-modal-cancel" onclick="closeDeleteTeamModal()">Cancel</button>
+        <button type="button" class="btn-modal-confirm-delete" id="btn-confirm-delete-team" onclick="executeDeleteTeam()">Delete Team</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. MANAGE SQUADS DRAWER / MODAL -->
+  <div id="modal-manage-squads" class="custom-modal-backdrop hidden" onclick="if(event.target===this) closeManageSquadsModal()">
+    <div class="custom-modal-card" style="max-width:620px;">
+      <div class="custom-modal-header">
+        <div>
+          <span class="custom-modal-badge">SQUADS DIRECTORY</span>
+          <h3 class="custom-modal-title-wrap" id="ms-team-title" style="margin:0; font-size:18px; color:#FFFFFF;">Coastal Warriors — Squads</h3>
+        </div>
+        <button type="button" class="btn-close-modal" onclick="closeManageSquadsModal()">&times;</button>
+      </div>
+      <div class="custom-modal-body" style="padding:20px;">
+        <div id="ms-squads-list" style="display:flex; flex-direction:column; gap:10px; margin-bottom:18px;">
+          <!-- Squad cards -->
+        </div>
+
+        <!-- Add Squad Inline -->
+        <div style="border-top:1px solid #343741; padding-top:16px;">
+          <h4 style="font-size:13px; font-weight:700; color:#FFFFFF; margin-bottom:8px;">Add New Squad</h4>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="ms-new-squad-name" class="tm-form-input" placeholder="Squad Name (e.g. Under-16 Blue)" style="flex:1;" />
+            <select id="ms-new-squad-format" class="tm-form-select" style="width:110px;">
+              <option value="T20">T20</option>
+              <option value="ODI">ODI</option>
+              <option value="Practice">Practice</option>
+            </select>
+            <button type="button" class="tm-btn-new-team" onclick="submitAddNewSquad()" style="padding:6px 14px;">Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer-actions" style="padding:14px 20px;">
+        <button type="button" class="btn-modal-cancel" onclick="closeManageSquadsModal()">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. TEAM SETTINGS MODAL -->
+  <div id="modal-team-settings" class="custom-modal-backdrop hidden" onclick="if(event.target===this) closeTeamSettingsModal()">
+    <div class="custom-modal-card" style="max-width:580px;">
+      <div class="custom-modal-header">
+        <div>
+          <span class="custom-modal-badge">TEAM CONFIGURATION</span>
+          <h3 class="custom-modal-title-wrap" id="ts-team-title" style="margin:0; font-size:18px; color:#FFFFFF;">Team Settings</h3>
+        </div>
+        <button type="button" class="btn-close-modal" onclick="closeTeamSettingsModal()">&times;</button>
+      </div>
+      <div class="custom-modal-body" style="padding:20px;">
+        <div class="tm-form-group" style="margin-bottom:14px;">
+          <label class="tm-form-label">Team Name</label>
+          <input type="text" id="ts-team-name-input" class="tm-form-input" />
+        </div>
+        <div class="tm-form-group" style="margin-bottom:14px;">
+          <label class="tm-form-label">Home Venue</label>
+          <input type="text" id="ts-team-venue-input" class="tm-form-input" />
+        </div>
+        <div class="tm-form-group" style="margin-bottom:14px;">
+          <label class="tm-form-label">Default Pitch Type</label>
+          <select id="ts-team-pitch-select" class="tm-form-select">
+            <option value="20.12m Turf">20.12m Turf</option>
+            <option value="18m Junior Turf">18m Junior Turf</option>
+            <option value="AstroTurf">AstroTurf</option>
+          </select>
+        </div>
+
+        <div style="border-top:1px solid rgba(239,68,68,0.25); margin-top:20px; padding-top:14px;">
+          <h5 style="color:#EF4444; font-size:12.5px; font-weight:700; margin-bottom:8px;">Danger Zone</h5>
+          <div style="display:flex; gap:10px;">
+            <button type="button" class="btn-tm-secondary" id="ts-archive-btn" onclick="archiveFromSettings()">Archive Team</button>
+            <button type="button" class="btn-modal-confirm-delete" style="padding:6px 12px; font-size:11.5px;" onclick="deleteFromSettings()">Delete Team</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer-actions" style="padding:14px 20px;">
+        <button type="button" class="btn-modal-cancel" onclick="closeTeamSettingsModal()">Cancel</button>
+        <button type="button" class="btn-modal-save" onclick="saveTeamSettings()">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. FLOATING TOAST NOTIFICATION CONTAINER -->
+  <div id="trajecta-toast-container"></div>
 
   <!-- NEW PLAYER MODAL -->
   <div id="new-player-modal" class="custom-modal-backdrop hidden" onclick="if(event.target===this) closeNewPlayerModal()">
