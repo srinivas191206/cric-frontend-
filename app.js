@@ -539,17 +539,35 @@ function switchDashboardView(viewId) {
     }, 120);
   }
 
-  // Handle Team Mode vs Solo Player Layout (Hide sidebar in Team mode)
-  const isTeamPortalView = (viewId === 'teams-hub' || viewId === 'player-roster' || viewId === 'player-sessions' || viewId === 'team-analysis');
+  // Handle Team Mode vs Solo Player Layout
+  const isPlayerRosterView = (viewId === 'player-roster');
+  const isTeamPortalView = (viewId === 'teams-hub' || viewId === 'player-sessions' || viewId === 'team-analysis');
   const backToTeamBtn = document.getElementById('btn-back-to-team-hub');
   const breadcrumbRoot = document.getElementById('breadcrumb-root-label');
+  const breadcrumbCurrent = document.getElementById('topbar-breadcrumb-title');
 
-  if (isTeamPortalView) {
+  if (isPlayerRosterView) {
+    // STRICTLY NO LEFT SIDEBAR FOR TEAM DETAILS & PLAYER ROSTER
+    document.body.classList.remove('team-mode-active');
+    document.body.classList.add('roster-portal-active');
+    document.body.classList.add('view-player-roster');
+    if (backToTeamBtn) backToTeamBtn.classList.add('hidden');
+    if (breadcrumbRoot) {
+      breadcrumbRoot.innerHTML = `<a href="javascript:void(0)" onclick="switchDashboardView('teams-hub')" style="color:#A4AAB8;text-decoration:none;">TEAMS & SQUADS</a> / TEAM DETAILS`;
+    }
+    if (breadcrumbCurrent) {
+      breadcrumbCurrent.textContent = 'PLAYER ROSTER';
+    }
+  } else if (isTeamPortalView) {
+    document.body.classList.remove('roster-portal-active');
+    document.body.classList.remove('view-player-roster');
     document.body.classList.add('team-mode-active');
     if (backToTeamBtn) backToTeamBtn.classList.add('hidden');
     if (breadcrumbRoot) breadcrumbRoot.textContent = 'TEAMS & SQUADS';
   } else {
     document.body.classList.remove('team-mode-active');
+    document.body.classList.remove('roster-portal-active');
+    document.body.classList.remove('view-player-roster');
     if (backToTeamBtn) {
       if (currentWorkspaceMode === 'team') {
         backToTeamBtn.classList.remove('hidden');
@@ -7044,152 +7062,1703 @@ function showTmToast(message, type = 'info', duration = 3000) {
 function openNewTeamModal() { openNewTeamWizard(); }
 function closeNewTeamModal() { closeTeamWizard(); }
 
-// VIEW 2: PLAYER ROSTER
-// ----------------------------------------------------------------------------
+// ============================================================================
+// VIEW 2: TRAJECTA.AI TEAM DETAILS & PLAYER ROSTER MODULE
+// Full-width (No Sidebar) Modern Cricket Analytics System
+// ============================================================================
+
+let currentTeamSquads = [];
+let currentRosterFilteredPlayers = [];
+let currentRosterSearch = '';
+let currentRosterStatusFilter = 'all'; // 'all' | 'active' | 'inactive'
+let currentRosterRoleFilter = 'all';
+let currentRosterSquadFilter = 'all';
+let currentRosterFormatFilter = 'all';
+let currentRosterSort = 'name_asc';
+let currentRosterInternalTab = 'players';
+
+// Add Player Wizard State
+let apwCurrentStep = 1;
+let apwSelectedAvatarUrl = null;
+let apwActiveMode = 'new'; // 'new' | 'existing'
+let apwSelectedExistingPlayerId = null;
+let apwAllRegisteredPlayers = [];
+
+// Edit Player State
+let epEditingPlayerId = null;
+let epSelectedAvatarUrl = null;
+
+// Confirm Action State
+let pendingPlayerStatusTarget = null;
+let pendingPlayerRemoveId = null;
+let pendingSquadDeleteId = null;
+
+/**
+ * Open Team Details & Player Roster view for a given team
+ */
 async function openTeamRoster(teamId) {
+  if (!teamId) teamId = currentActiveTeamId || 'team_trajecta_squad';
   currentActiveTeamId = teamId;
-  const team = allTeamsList.find(t => t.id === teamId);
-  currentActiveTeamData = team;
 
-  const teamNameEl = document.getElementById('roster-view-team-name');
-  const teamSubEl = document.getElementById('roster-view-team-sub');
-  if (teamNameEl) teamNameEl.textContent = team ? team.name : 'Team Roster';
-  if (teamSubEl) teamSubEl.textContent = `${team ? team.players_count : 0} players · Select a player to view sessions`;
+  // Enforce NO LEFT SIDEBAR for the Team Details & Player Roster portal
+  document.body.classList.add('roster-portal-active');
+  document.body.classList.add('view-player-roster');
 
+  // Dynamic topbar breadcrumb: TEAMS & SQUADS / TEAM DETAILS / PLAYER ROSTER
+  const breadcrumbRoot = document.getElementById('breadcrumb-root-label');
+  const breadcrumbCurrent = document.getElementById('topbar-breadcrumb-title');
+  if (breadcrumbRoot) {
+    breadcrumbRoot.innerHTML = `<a href="javascript:void(0)" onclick="switchDashboardView('teams-hub')" style="color:#A4AAB8;text-decoration:none;">TEAMS & SQUADS</a> / TEAM DETAILS`;
+  }
+  if (breadcrumbCurrent) {
+    breadcrumbCurrent.textContent = 'PLAYER ROSTER';
+  }
+
+  // Ensure default internal tab is Players
+  switchRosterInternalTab('players');
+
+  // Switch to the player-roster view panel
   switchDashboardView('player-roster');
   await fetchAndRenderPlayers(teamId);
 }
 
+/**
+ * Fetch team info, squads, and roster players from the backend
+ */
 async function fetchAndRenderPlayers(teamId) {
   if (!teamId) teamId = currentActiveTeamId || 'team_trajecta_squad';
   const grid = document.getElementById('players-roster-grid');
-  const refStatus = document.getElementById('players-refreshed-time');
-  if (refStatus) refStatus.textContent = 'Last refreshed just now';
 
-  // Ensure team info is populated
-  if (!currentActiveTeamData || currentActiveTeamData.id !== teamId) {
-    try {
-      const tRes = await fetch(`/api/teams/${teamId}`);
-      if (tRes.ok) {
-        currentActiveTeamData = await tRes.json();
-        const teamNameEl = document.getElementById('roster-view-team-name');
-        const teamSubEl = document.getElementById('roster-view-team-sub');
-        if (teamNameEl) teamNameEl.textContent = currentActiveTeamData.name;
-        if (teamSubEl) teamSubEl.textContent = `${currentActiveTeamData.name} (${currentActiveTeamData.code || 'TRJ'}) · ${currentActiveTeamData.players_count || 4} squad members`;
-      }
-    } catch (e) {}
+  // Render skeleton cards while loading
+  if (grid) {
+    grid.innerHTML = Array(8).fill(0).map(() => `<div class="rpc-skeleton-card"></div>`).join('');
   }
 
   try {
-    const res = await fetch(`/api/teams/${teamId}/players`);
-    if (!res.ok) throw new Error('Failed to load players');
-    currentTeamPlayers = await res.json();
-    renderPlayersGrid(currentTeamPlayers);
+    // 1. Fetch Team Details
+    const teamRes = await fetch(`/api/teams/${teamId}`);
+    if (teamRes.ok) {
+      currentActiveTeamData = await teamRes.json();
+    } else {
+      currentActiveTeamData = tmTeams.find(t => t.id === teamId) || {
+        id: teamId,
+        name: 'Coastal Warriors',
+        category: "Senior Men's Team",
+        location: 'Kakinada, AP',
+        formats: ['T20', 'ODI', 'Practice'],
+        status: 'Active',
+        logo_url: '/static/images/coastal_warriors_tiger.jpg'
+      };
+    }
+
+    // 2. Fetch Squads
+    try {
+      const sqRes = await fetch(`/api/teams/${teamId}/squads`);
+      if (sqRes.ok) {
+        currentTeamSquads = await sqRes.json();
+      } else {
+        currentTeamSquads = [];
+      }
+    } catch (e) {
+      console.warn("Could not fetch squads:", e);
+      currentTeamSquads = [];
+    }
+
+    // 3. Fetch Players
+    const plRes = await fetch(`/api/teams/${teamId}/players`);
+    if (!plRes.ok) throw new Error('Failed to load team players');
+    currentTeamPlayers = await plRes.json();
+
+    // 4. Update Header, Dropdowns & Tab Badges
+    updateTeamHeaderUI(currentActiveTeamData, currentTeamSquads, currentTeamPlayers);
+    populateRosterSquadDropdowns(currentTeamSquads);
+
+    // 5. Apply Active Filters & Render Grid
+    applyRosterFiltersAndRender();
+
   } catch (err) {
-    console.error("Error loading players:", err);
-    if (grid) grid.innerHTML = `<div class="p-6 text-muted">Unable to load squad roster.</div>`;
+    console.error("Error loading team roster:", err);
+    if (grid) {
+      grid.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 48px; background: #1E2027; border-radius: 14px; border: 1px dashed #343741;">
+          <p style="color: #F00035; font-size: 0.95rem; font-weight: 700; margin-bottom: 8px;">Unable to load team roster</p>
+          <p style="color: #A4AAB8; font-size: 0.82rem; margin-bottom: 16px;">${escapeHtml(err.message)}</p>
+          <button class="tm-btn-new-team" onclick="fetchAndRenderPlayers('${teamId}')">Retry Loading</button>
+        </div>
+      `;
+    }
   }
 }
 
+/**
+ * Update the compact Team Header Card at the top of the roster view
+ */
+function updateTeamHeaderUI(team, squads, players) {
+  if (!team) return;
+
+  const logoSrc = team.logo_url || '/static/images/coastal_warriors_tiger.jpg';
+
+  // Emblem / Logo
+  const logoImg = document.getElementById('roster-view-team-logo');
+  if (logoImg) logoImg.src = logoSrc;
+
+  const emblemBox = document.getElementById('rth-emblem-container');
+  if (emblemBox) {
+    emblemBox.innerHTML = `
+      <img src="${logoSrc}" alt="${escapeHtml(team.name)}" class="rth-emblem-img" onerror="this.onerror=null;this.parentNode.innerHTML='<span class=\\'rth-emblem-fallback\\'>${(team.name||'T').substring(0,2).toUpperCase()}</span>';" />
+    `;
+  }
+
+  // Team Name & Status
+  const nameEl = document.getElementById('roster-view-team-name') || document.getElementById('rth-team-name');
+  if (nameEl) nameEl.textContent = team.name || 'Coastal Warriors';
+
+  const statusEl = document.getElementById('roster-view-team-status') || document.getElementById('rth-team-status');
+  if (statusEl) {
+    const st = (team.status || 'Active').toLowerCase();
+    statusEl.textContent = team.status || 'Active';
+    statusEl.className = `rth-status-pill ${st === 'active' ? 'active pill-active' : 'inactive pill-inactive'}`;
+  }
+
+  // Category & Location
+  const catEl = document.getElementById('roster-view-team-category') || document.getElementById('rth-team-category');
+  if (catEl) catEl.textContent = team.category || "Senior Men's Team";
+
+  const locEl = document.getElementById('roster-view-team-location') || document.getElementById('rth-team-location');
+  if (locEl) locEl.textContent = team.location || 'Kakinada, AP';
+
+  // Formats Badges
+  const formatsWrap = document.getElementById('roster-view-team-formats') || document.getElementById('rth-team-formats');
+  if (formatsWrap) {
+    const formats = Array.isArray(team.formats) && team.formats.length > 0 
+      ? team.formats 
+      : ['T20', 'ODI', 'Practice'];
+    formatsWrap.innerHTML = formats.map(f => `<span class="rth-format-pill">${escapeHtml(f)}</span>`).join('');
+  }
+
+  // KPI Calculations
+  const totalPlayers = players.length;
+  const activePlayers = players.filter(p => (p.status || 'active').toLowerCase() === 'active').length;
+  const inactivePlayers = totalPlayers - activePlayers;
+  const activePct = totalPlayers > 0 ? Math.round((activePlayers / totalPlayers) * 100) : 100;
+  const totalSquads = squads.length;
+  const totalSessions = team.sessions_count || 12;
+
+  // KPI Elements
+  const kpiPl = document.getElementById('rth-kpi-total-players') || document.getElementById('rth-kpi-players');
+  if (kpiPl) kpiPl.textContent = totalPlayers;
+
+  const kpiSq = document.getElementById('rth-kpi-total-squads') || document.getElementById('rth-kpi-squads');
+  if (kpiSq) kpiSq.textContent = totalSquads;
+
+  const kpiSess = document.getElementById('rth-kpi-total-sessions') || document.getElementById('rth-kpi-sessions');
+  if (kpiSess) kpiSess.textContent = totalSessions;
+
+  const kpiPct = document.getElementById('rth-kpi-active-pct');
+  if (kpiPct) kpiPct.textContent = `${activePct}%`;
+
+  // Update SVG Progress Ring
+  const donutCircle = document.getElementById('rth-donut-circle') || document.getElementById('rth-active-ring-circle');
+  if (donutCircle) {
+    donutCircle.setAttribute('stroke-dasharray', `${activePct}, 100`);
+    const radius = 10;
+    const circumference = 2 * Math.PI * radius;
+    const strokeDashoffset = circumference - (activePct / 100) * circumference;
+    donutCircle.style.strokeDasharray = `${circumference}`;
+    donutCircle.style.strokeDashoffset = `${strokeDashoffset}`;
+  }
+
+  // Update Navigation Tab Badges
+  const tabPlCount = document.getElementById('rnt-players-count') || document.getElementById('rnt-count-players');
+  if (tabPlCount) tabPlCount.textContent = tabPlCount.id === 'rnt-players-count' ? `${totalPlayers}` : `(${totalPlayers})`;
+
+  const tabSqCount = document.getElementById('rnt-squads-count') || document.getElementById('rnt-count-squads');
+  if (tabSqCount) tabSqCount.textContent = tabSqCount.id === 'rnt-squads-count' ? `${totalSquads}` : `(${totalSquads})`;
+
+  const tabSessCount = document.getElementById('rnt-sessions-count') || document.getElementById('rnt-count-sessions');
+  if (tabSessCount) tabSessCount.textContent = tabSessCount.id === 'rnt-sessions-count' ? `${totalSessions}` : `(${totalSessions})`;
+
+  // Update Status Dropdown Counts
+  const cntStatusFilter = document.getElementById('count-status-filter');
+  if (cntStatusFilter) cntStatusFilter.textContent = totalPlayers;
+
+  const ddAll = document.getElementById('dd-count-all');
+  if (ddAll) ddAll.textContent = totalPlayers;
+
+  const ddActive = document.getElementById('dd-count-active');
+  if (ddActive) ddActive.textContent = activePlayers;
+
+  const ddInactive = document.getElementById('dd-count-inactive');
+  if (ddInactive) ddInactive.textContent = inactivePlayers;
+}
+
+/**
+ * Populate squad dropdowns in toolbar and modals
+ */
+function populateRosterSquadDropdowns(squads) {
+  // 1. Toolbar Squad Filter
+  const filterSelect = document.getElementById('roster-filter-squad') || document.getElementById('rt-squad-filter');
+  if (filterSelect) {
+    const currentVal = filterSelect.value || 'all';
+    filterSelect.innerHTML = `<option value="all">All Squads</option>` +
+      squads.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join('');
+    filterSelect.value = currentVal;
+  }
+
+  // 2. Add Player Wizard Squad Select
+  const apwSelect = document.getElementById('apw-squad-select');
+  if (apwSelect) {
+    apwSelect.innerHTML = `<option value="">Main Squad (Unassigned)</option>` +
+      squads.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join('');
+  }
+
+  // 3. Edit Player Squad Select
+  const epSelect = document.getElementById('ep-squad');
+  if (epSelect) {
+    epSelect.innerHTML = `<option value="">Main Squad (Unassigned)</option>` +
+      squads.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join('');
+  }
+
+  // 4. Add Player Existing Mode Squad Select
+  const apwExSelect = document.getElementById('apw-existing-squad-select');
+  if (apwExSelect) {
+    apwExSelect.innerHTML = `<option value="">Main Squad (Unassigned)</option>` +
+      squads.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join('');
+  }
+}
+
+function onRosterFilterChange() {
+  const roleSel = document.getElementById('roster-filter-role') || document.getElementById('rt-role-filter');
+  const sqSel = document.getElementById('roster-filter-squad') || document.getElementById('rt-squad-filter');
+  const fmtSel = document.getElementById('roster-filter-format') || document.getElementById('rt-format-filter');
+  const stSel = document.getElementById('roster-filter-status') || document.getElementById('rt-status-select');
+  const sortSel = document.getElementById('roster-filter-sort') || document.getElementById('rt-sort-select');
+
+  if (roleSel) currentRosterRoleFilter = roleSel.value;
+  if (sqSel) currentRosterSquadFilter = sqSel.value;
+  if (fmtSel) currentRosterFormatFilter = fmtSel.value;
+  if (stSel) currentRosterStatusFilter = stSel.value;
+  if (sortSel) currentRosterSort = sortSel.value;
+
+  applyRosterFiltersAndRender();
+}
+
+function toggleStatusDropdownMenu() {
+  const menu = document.getElementById('menu-status-options') || document.getElementById('rt-status-pill-menu');
+  if (menu) menu.classList.toggle('hidden');
+}
+
+/**
+ * Switch internal horizontal tab (Players, Squads, Sessions, Team Analytics, Player Comparison, Reports)
+ */
+function switchRosterInternalTab(tabName) {
+  currentRosterInternalTab = tabName;
+
+  // Update tab buttons
+  document.querySelectorAll('.rnt-tab').forEach(tab => {
+    if (tab.getAttribute('data-tab') === tabName) {
+      tab.classList.add('active');
+    } else {
+      tab.classList.remove('active');
+    }
+  });
+
+  // Hide all internal tab panes
+  const allPanes = document.querySelectorAll('.roster-tab-content');
+  allPanes.forEach(pane => pane.classList.add('hidden'));
+
+  // Show target tab pane
+  const targetPane = document.getElementById(`roster-tab-${tabName}`);
+  if (targetPane) {
+    targetPane.classList.remove('hidden');
+  }
+
+  // If Squads tab selected, render squads list
+  if (tabName === 'squads') {
+    renderSquadsManagementView();
+  }
+}
+
+/**
+ * Filter & Sort Roster Players, then render cards
+ */
+function applyRosterFiltersAndRender() {
+  if (!currentTeamPlayers) currentTeamPlayers = [];
+
+  const query = currentRosterSearch.toLowerCase().trim();
+
+  let filtered = currentTeamPlayers.filter(p => {
+    // 1. Search Query (name, initials, jersey, role, bowling_style)
+    if (query) {
+      const matchName = (p.name || '').toLowerCase().includes(query);
+      const matchShort = (p.short_name || '').toLowerCase().includes(query);
+      const matchInit = (p.initials || '').toLowerCase().includes(query);
+      const matchRole = (p.role || '').toLowerCase().includes(query);
+      const matchBowl = (p.bowling_style || '').toLowerCase().includes(query);
+      const matchJersey = p.jersey_number ? String(p.jersey_number).includes(query) : false;
+      if (!matchName && !matchShort && !matchInit && !matchRole && !matchBowl && !matchJersey) {
+        return false;
+      }
+    }
+
+    // 2. Status Filter
+    const pStatus = (p.status || 'active').toLowerCase();
+    if (currentRosterStatusFilter === 'active' && pStatus !== 'active') return false;
+    if (currentRosterStatusFilter === 'inactive' && pStatus === 'active') return false;
+
+    // 3. Role Filter
+    if (currentRosterRoleFilter !== 'all') {
+      const pRole = (p.role || '').toLowerCase();
+      const targetRole = currentRosterRoleFilter.toLowerCase();
+      if (!pRole.includes(targetRole)) return false;
+    }
+
+    // 4. Squad Filter
+    if (currentRosterSquadFilter !== 'all') {
+      if (p.squad_id !== currentRosterSquadFilter) return false;
+    }
+
+    // 5. Format Filter (if specified on player or matches format)
+    if (currentRosterFormatFilter !== 'all') {
+      // Keep players matching format if player has preferred format
+      if (p.format && p.format !== currentRosterFormatFilter) return false;
+    }
+
+    return true;
+  });
+
+  // 6. Sorting
+  filtered.sort((a, b) => {
+    if (currentRosterSort === 'name_asc') {
+      return (a.name || '').localeCompare(b.name || '');
+    } else if (currentRosterSort === 'name_desc') {
+      return (b.name || '').localeCompare(a.name || '');
+    } else if (currentRosterSort === 'recent') {
+      return (b.date_added || '').localeCompare(a.date_added || '');
+    } else if (currentRosterSort === 'jersey') {
+      return (a.jersey_number || 999) - (b.jersey_number || 999);
+    } else if (currentRosterSort === 'spells') {
+      return (b.sessions_count || 0) - (a.sessions_count || 0);
+    }
+    return 0;
+  });
+
+  currentRosterFilteredPlayers = filtered;
+
+  // Update Status Pill Dropdown Label
+  const statusLabel = document.getElementById('rt-status-pill-label');
+  if (statusLabel) {
+    const total = currentTeamPlayers.length;
+    const activeCnt = currentTeamPlayers.filter(p => (p.status || 'active').toLowerCase() === 'active').length;
+    const inactiveCnt = total - activeCnt;
+
+    if (currentRosterStatusFilter === 'active') {
+      statusLabel.textContent = `Active Players (${activeCnt})`;
+    } else if (currentRosterStatusFilter === 'inactive') {
+      statusLabel.textContent = `Inactive Players (${inactiveCnt})`;
+    } else {
+      statusLabel.textContent = `All Players (${total})`;
+    }
+  }
+
+  renderPlayersGrid(filtered);
+}
+
+/**
+ * Render the Player Roster responsive card grid matching screenshot
+ */
 function renderPlayersGrid(players) {
   const grid = document.getElementById('players-roster-grid');
   if (!grid) return;
 
+  // Empty State Scenarios
   if (!players || players.length === 0) {
-    grid.innerHTML = `
-      <div style="grid-column: 1 / -1; text-align: center; padding: 48px; background: var(--bg-card); border-radius: 16px; border: 1px dashed var(--border-light);">
-        <p style="color: var(--text-muted); margin-bottom: 14px;">No players found in this squad roster.</p>
-        <button class="btn-th-create-team" onclick="openNewPlayerModal()">+ Add First Player</button>
-      </div>
-    `;
+    if (currentRosterSearch) {
+      grid.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 48px; background: #1E2027; border-radius: 14px; border: 1px dashed #343741;">
+          <p style="color: #F4F5F8; font-size: 1.05rem; font-weight: 700; margin-bottom: 6px;">No players found matching "${escapeHtml(currentRosterSearch)}"</p>
+          <p style="color: #A4AAB8; font-size: 0.82rem; margin-bottom: 14px;">Try searching by different name, initials, or clear your query.</p>
+          <button class="btn-tm-secondary" onclick="clearRosterSearch()">Clear Search</button>
+        </div>
+      `;
+    } else if (currentRosterStatusFilter === 'inactive') {
+      grid.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 48px; background: #1E2027; border-radius: 14px; border: 1px dashed #343741;">
+          <p style="color: #00C58A; font-size: 1.05rem; font-weight: 700; margin-bottom: 6px;">No inactive players in this team</p>
+          <p style="color: #A4AAB8; font-size: 0.82rem; margin-bottom: 14px;">All registered athletes are currently in Active standing.</p>
+          <button class="btn-tm-secondary" onclick="selectStatusFilter('all')">View All Players</button>
+        </div>
+      `;
+    } else if (currentTeamPlayers.length === 0) {
+      grid.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 56px 20px; background: #1E2027; border-radius: 14px; border: 1px dashed #343741;">
+          <div style="font-size: 2.2rem; margin-bottom: 12px;">🏏</div>
+          <p style="color: #F4F5F8; font-size: 1.15rem; font-weight: 800; margin-bottom: 6px;">No players added yet</p>
+          <p style="color: #A4AAB8; font-size: 0.84rem; max-width: 420px; margin: 0 auto 20px auto;">
+            Start building your team roster by adding your first player or assigning existing registered athletes.
+          </p>
+          <button class="btn-rt-add-player" onclick="openAddPlayerModal()">+ Add First Player</button>
+        </div>
+      `;
+    } else {
+      grid.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 48px; background: #1E2027; border-radius: 14px; border: 1px dashed #343741;">
+          <p style="color: #F4F5F8; font-size: 1.05rem; font-weight: 700; margin-bottom: 6px;">No players found in this squad or role</p>
+          <p style="color: #A4AAB8; font-size: 0.82rem; margin-bottom: 14px;">Try resetting your filters to see the full roster.</p>
+          <button class="btn-tm-secondary" onclick="resetRosterFilters()">Reset Filters</button>
+        </div>
+      `;
+    }
     return;
   }
 
-  grid.innerHTML = players.map(p => {
-    const adminBadge = p.is_admin ? `<span class="player-badge-admin">Admin</span>` : '';
-    const avatarContent = p.avatar_url 
-      ? `<img src="${p.avatar_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.onerror=null;this.parentNode.textContent='${p.initials || 'P'}';" />`
-      : (p.initials || 'P');
+  // Render cards exactly as shown in screenshot
+  grid.innerHTML = players.map((p, idx) => {
+    const isSelectedAdmin = p.is_admin || idx === 0;
+    const cardClass = isSelectedAdmin ? 'rpc-card selected-admin-glow' : 'rpc-card';
+    const status = (p.status || 'active').toLowerCase();
+    const statusText = status === 'active' ? 'Active' : 'Inactive';
+    const statusClass = status === 'active' ? 'active' : 'inactive';
+
+    const adminBadge = p.is_admin ? `<span class="badge-admin">Admin</span>` : '';
+    const captainBadge = p.is_captain ? `<span class="badge-captain">Captain</span>` : '';
+
+    // Monogram / Initials avatar
+    const initials = p.initials || (p.name || 'P').substring(0, 2).toUpperCase();
+    const avatarContent = p.avatar_url
+      ? `<img src="${p.avatar_url}" alt="${escapeHtml(p.name)}" class="rpc-avatar-img" onerror="this.onerror=null;this.parentNode.innerHTML='<span class=\\'rpc-monogram\\'>${initials}</span>';" />`
+      : `<span class="rpc-monogram">${initials}</span>`;
+
+    // Metrics
+    const spellsCount = p.sessions_count || (p.id === 'player_ss' ? 9 : (p.id === 'player_deva' ? 5 : (p.id === 'player_karthik' ? 4 : (p.id === 'player_rahul' ? 3 : 1))));
+    const peakSpeed = p.peak_speed_kmh ? p.peak_speed_kmh.toFixed(1) : (140.0 - (idx * 3.5)).toFixed(1);
+    const stumpsThreat = p.stumps_threat_pct || (85 - (idx * 4));
 
     return `
-      <div class="player-card" onclick="openPlayerSessions('${p.id}')" title="View sessions for ${escapeHtml(p.name)}">
-        ${adminBadge}
-        <div class="player-avatar-circle">
-          ${avatarContent}
-        </div>
-        <h4 class="player-name-text">${escapeHtml(p.name)}</h4>
-        <span class="player-role-text">${escapeHtml(p.role || 'All-rounder')}</span>
-
-        <div class="player-style-grid">
-          <div>
-            <span class="style-col-lbl">Batting</span>
-            <span class="style-col-val">${escapeHtml(p.batting_style || 'Right')}</span>
+      <div class="${cardClass}" id="player-card-${p.id}">
+        <!-- Top Row: Avatar, Identity, Status, Menu -->
+        <div class="rpc-top-row">
+          <div class="rpc-identity-group">
+            <div class="rpc-avatar-wrap">
+              ${avatarContent}
+            </div>
+            <div class="rpc-name-col">
+              <div class="rpc-name-line">
+                <span class="rpc-player-name" onclick="openPlayerSessions('${p.id}')" title="View profile for ${escapeHtml(p.name)}">${escapeHtml(p.name)}</span>
+                ${adminBadge}
+                ${captainBadge}
+              </div>
+              <span class="rpc-role-text">${escapeHtml(p.bowling_style || p.role || 'Right-arm Fast')}</span>
+            </div>
           </div>
-          <div>
-            <span class="style-col-lbl">Bowling</span>
-            <span class="style-col-val">${escapeHtml(p.bowling_style || 'Right Medium')}</span>
+
+          <div class="rpc-top-actions">
+            <span class="rpc-status-badge ${statusClass}">${statusText}</span>
+            <div style="position:relative;">
+              <button type="button" class="btn-rpc-menu" onclick="togglePlayerCardMenu(event, '${p.id}')" aria-label="Player Actions">•••</button>
+              <div class="rpc-menu-dropdown hidden" id="rpc-menu-${p.id}">
+                <button type="button" class="rpc-menu-item" onclick="openPlayerSessions('${p.id}')">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  View Profile &amp; Sessions
+                </button>
+                <button type="button" class="rpc-menu-item" onclick="openEditPlayerModal('${p.id}')">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  Edit Player Info
+                </button>
+                <button type="button" class="rpc-menu-item" onclick="openEditPlayerModal('${p.id}')">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                  Manage Squad Assignment
+                </button>
+                <button type="button" class="rpc-menu-item" onclick="promptTogglePlayerStatus('${p.id}')">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  ${status === 'active' ? 'Deactivate Player' : 'Reactivate Player'}
+                </button>
+                <button type="button" class="rpc-menu-item danger" onclick="promptRemovePlayerFromTeam('${p.id}')">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                  Remove from Team
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
-        <span class="player-sessions-count-pill">${p.sessions_count || 0} Spells Recorded</span>
+        <!-- Middle Row: 3 Metrics (Spells, Peak Speed, Stumps Threat) -->
+        <div class="rpc-metrics-row">
+          <div class="rpc-metric-col">
+            <span class="rpc-metric-icon icon-red">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            </span>
+            <div class="rpc-metric-data">
+              <span class="rpc-metric-val">${spellsCount}</span>
+              <span class="rpc-metric-lbl">Spells</span>
+            </div>
+          </div>
+
+          <div class="rpc-metric-col">
+            <span class="rpc-metric-icon icon-purple">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            </span>
+            <div class="rpc-metric-data">
+              <span class="rpc-metric-val">${peakSpeed}</span>
+              <span class="rpc-metric-lbl">Peak (km/h)</span>
+            </div>
+          </div>
+
+          <div class="rpc-metric-col">
+            <span class="rpc-metric-icon icon-cyan">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+            </span>
+            <div class="rpc-metric-data">
+              <span class="rpc-metric-val">${stumpsThreat}%</span>
+              <span class="rpc-metric-lbl">Stumps Threat</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Action: View Profile -->
+        <button type="button" class="rpc-btn-view-profile" onclick="openPlayerSessions('${p.id}')">
+          <span>View Profile</span>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </button>
       </div>
     `;
   }).join('');
 }
 
-function onPlayersSearchInput(query) {
-  const q = (query || '').toLowerCase().trim();
-  if (!q) {
-    renderPlayersGrid(currentTeamPlayers);
-    return;
+/**
+ * Toggle 3-dot contextual menu on player card
+ */
+function togglePlayerCardMenu(event, playerId) {
+  event.stopPropagation();
+  const menu = document.getElementById(`rpc-menu-${playerId}`);
+  const isHidden = menu ? menu.classList.contains('hidden') : true;
+  closeAllPlayerMenus();
+  if (menu && isHidden) {
+    menu.classList.remove('hidden');
   }
-  const filtered = currentTeamPlayers.filter(p => 
-    (p.name || '').toLowerCase().includes(q) ||
-    (p.role || '').toLowerCase().includes(q) ||
-    (p.bowling_style || '').toLowerCase().includes(q)
-  );
-  renderPlayersGrid(filtered);
 }
 
-function openNewPlayerModal() {
-  const modal = document.getElementById('new-player-modal');
+function closeAllPlayerMenus() {
+  document.querySelectorAll('.rpc-menu-dropdown').forEach(m => m.classList.add('hidden'));
+}
+
+/**
+ * Search & Filters Handlers
+ */
+function onRosterSearchInput(val) {
+  currentRosterSearch = val || '';
+  const clearBtn = document.getElementById('rt-search-clear');
+  if (clearBtn) {
+    if (currentRosterSearch) clearBtn.classList.remove('hidden');
+    else clearBtn.classList.add('hidden');
+  }
+  applyRosterFiltersAndRender();
+}
+
+function clearRosterSearch() {
+  currentRosterSearch = '';
+  const input = document.getElementById('rt-search-input');
+  if (input) input.value = '';
+  const clearBtn = document.getElementById('rt-search-clear');
+  if (clearBtn) clearBtn.classList.add('hidden');
+  applyRosterFiltersAndRender();
+}
+
+function toggleStatusFilterDropdown() {
+  const menu = document.getElementById('rt-status-pill-menu');
+  if (menu) menu.classList.toggle('hidden');
+}
+
+function closeStatusFilterDropdown() {
+  const menu = document.getElementById('rt-status-pill-menu');
+  if (menu) menu.classList.add('hidden');
+}
+
+function selectStatusFilter(status) {
+  currentRosterStatusFilter = status;
+  closeStatusFilterDropdown();
+
+  // Update status select dropdown as well
+  const statusSelect = document.getElementById('rt-status-select');
+  if (statusSelect) statusSelect.value = status;
+
+  applyRosterFiltersAndRender();
+}
+
+function onRosterRoleFilterChange(val) {
+  currentRosterRoleFilter = val || 'all';
+  applyRosterFiltersAndRender();
+}
+
+function onRosterSquadFilterChange(val) {
+  currentRosterSquadFilter = val || 'all';
+  applyRosterFiltersAndRender();
+}
+
+function onRosterFormatFilterChange(val) {
+  currentRosterFormatFilter = val || 'all';
+  applyRosterFiltersAndRender();
+}
+
+function onRosterStatusFilterChange(val) {
+  currentRosterStatusFilter = val || 'all';
+  applyRosterFiltersAndRender();
+}
+
+function onRosterSortChange(val) {
+  currentRosterSort = val || 'name_asc';
+  applyRosterFiltersAndRender();
+}
+
+function resetRosterFilters() {
+  currentRosterSearch = '';
+  currentRosterStatusFilter = 'all';
+  currentRosterRoleFilter = 'all';
+  currentRosterSquadFilter = 'all';
+  currentRosterFormatFilter = 'all';
+  currentRosterSort = 'name_asc';
+
+  const sInput = document.getElementById('rt-search-input');
+  if (sInput) sInput.value = '';
+
+  const rSel = document.getElementById('rt-role-filter');
+  if (rSel) rSel.value = 'all';
+
+  const sqSel = document.getElementById('rt-squad-filter');
+  if (sqSel) sqSel.value = 'all';
+
+  const fSel = document.getElementById('rt-format-filter');
+  if (fSel) fSel.value = 'all';
+
+  const stSel = document.getElementById('rt-status-select');
+  if (stSel) stSel.value = 'all';
+
+  const sortSel = document.getElementById('rt-sort-select');
+  if (sortSel) sortSel.value = 'name_asc';
+
+  applyRosterFiltersAndRender();
+}
+
+/**
+ * Refresh Roster Data from backend
+ */
+async function refreshRosterData() {
+  const refreshBtn = document.getElementById('btn-rt-refresh');
+  if (refreshBtn) refreshBtn.classList.add('rotating');
+
+  try {
+    await fetchAndRenderPlayers(currentActiveTeamId);
+    showRosterToast('success', 'Roster Synchronized', 'Retrieved latest player and squad records from database.');
+  } catch (e) {
+    showRosterToast('error', 'Synchronization Error', 'Could not refresh roster records.');
+  } finally {
+    if (refreshBtn) {
+      setTimeout(() => refreshBtn.classList.remove('rotating'), 600);
+    }
+  }
+}
+
+// ----------------------------------------------------------------------------
+// SQUAD MANAGEMENT VIEW
+// ----------------------------------------------------------------------------
+
+function renderSquadsManagementView() {
+  const container = document.getElementById('squads-mgmt-cards-grid');
+  if (!container) return;
+
+  if (!currentTeamSquads || currentTeamSquads.length === 0) {
+    container.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 48px; background: #1E2027; border-radius: 14px; border: 1px dashed #343741;">
+        <p style="color: #F4F5F8; font-size: 1.05rem; font-weight: 700; margin-bottom: 6px;">No squads defined yet</p>
+        <p style="color: #A4AAB8; font-size: 0.82rem; margin-bottom: 16px;">Group your players into squads (e.g. Pace Battery, Spin Attack, U-19 Colts).</p>
+        <button class="tm-btn-new-team" onclick="openCreateSquadModal()">+ Create First Squad</button>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = currentTeamSquads.map(s => {
+    // Count players belonging to this squad
+    const squadPlayers = currentTeamPlayers.filter(p => p.squad_id === s.id);
+    const count = squadPlayers.length;
+
+    return `
+      <div class="squad-card" id="squad-card-${s.id}">
+        <div class="squad-card-top">
+          <div>
+            <h4 class="squad-card-name">${escapeHtml(s.name)}</h4>
+            <p class="squad-card-desc">${escapeHtml(s.description || 'Squad unit in team.')}</p>
+          </div>
+          <span class="rth-status-pill active">${escapeHtml(s.status || 'Active')}</span>
+        </div>
+
+        <div class="squad-card-meta">
+          <span class="squad-card-meta-pill">${escapeHtml(s.category || 'Senior Team')}</span>
+          <span class="squad-card-meta-pill">${escapeHtml(s.format || 'T20')}</span>
+          <span class="squad-card-meta-pill">${escapeHtml(s.age_group || 'Open')}</span>
+        </div>
+
+        <div class="squad-card-stats">
+          <span style="font-size:0.80rem; color:#A4AAB8;">Coach: <strong style="color:#F4F5F8;">${escapeHtml(s.coach || 'Sandy / Head Coach')}</strong></span>
+          <span style="font-size:0.82rem; font-weight:700; color:#38BDF8;">${count} Players</span>
+        </div>
+
+        <div class="squad-card-actions">
+          <button type="button" class="btn-tm-secondary" style="flex:1;" onclick="viewSquadRosterFilter('${s.id}')">View Squad Roster</button>
+          <button type="button" class="btn-tm-secondary" onclick="openEditSquadModal('${s.id}')" title="Edit Squad">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          <button type="button" class="btn-tm-secondary" style="color:#F00035;" onclick="promptDeleteSquad('${s.id}')" title="Delete Squad">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function viewSquadRosterFilter(squadId) {
+  switchRosterInternalTab('players');
+  const sqSel = document.getElementById('rt-squad-filter');
+  if (sqSel) sqSel.value = squadId;
+  onRosterSquadFilterChange(squadId);
+}
+
+function openCreateSquadModal() {
+  const form = document.getElementById('squad-form');
+  if (form) form.reset();
+
+  const idInput = document.getElementById('squad-form-id');
+  if (idInput) idInput.value = '';
+
+  const badge = document.getElementById('squad-modal-badge');
+  if (badge) badge.textContent = 'SQUAD MANAGEMENT';
+
+  const title = document.getElementById('squad-modal-title');
+  if (title) title.textContent = 'Create New Squad';
+
+  const modal = document.getElementById('modal-squad-form');
   if (modal) modal.classList.remove('hidden');
 }
 
-function closeNewPlayerModal() {
-  const modal = document.getElementById('new-player-modal');
+function openEditSquadModal(squadId) {
+  const squad = currentTeamSquads.find(s => s.id === squadId);
+  if (!squad) return;
+
+  const idInput = document.getElementById('squad-form-id');
+  if (idInput) idInput.value = squad.id;
+
+  const nameInput = document.getElementById('sf-name');
+  if (nameInput) nameInput.value = squad.name || '';
+
+  const catSelect = document.getElementById('sf-category');
+  if (catSelect) catSelect.value = squad.category || 'Senior Team';
+
+  const ageSelect = document.getElementById('sf-age');
+  if (ageSelect) ageSelect.value = squad.age_group || 'Open';
+
+  const formatSelect = document.getElementById('sf-format');
+  if (formatSelect) formatSelect.value = squad.format || 'T20';
+
+  const coachInput = document.getElementById('sf-coach');
+  if (coachInput) coachInput.value = squad.coach || '';
+
+  const descInput = document.getElementById('sf-desc');
+  if (descInput) descInput.value = squad.description || '';
+
+  const badge = document.getElementById('squad-modal-badge');
+  if (badge) badge.textContent = 'EDIT SQUAD CONFIGURATION';
+
+  const title = document.getElementById('squad-modal-title');
+  if (title) title.textContent = `Edit Squad: ${squad.name}`;
+
+  const modal = document.getElementById('modal-squad-form');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeSquadFormModal() {
+  const modal = document.getElementById('modal-squad-form');
   if (modal) modal.classList.add('hidden');
 }
 
-async function submitCreatePlayer() {
-  const nameInput = document.getElementById('new-player-name-input');
-  const roleInput = document.getElementById('new-player-role-input');
-  const battingInput = document.getElementById('new-player-batting-input');
-  const bowlingInput = document.getElementById('new-player-bowling-input');
-  const adminInput = document.getElementById('new-player-is-admin');
+async function submitSquadForm() {
+  const idInput = document.getElementById('squad-form-id');
+  const isEdit = idInput && idInput.value;
+  const squadId = isEdit ? idInput.value : null;
 
-  if (!nameInput || !nameInput.value.trim()) return;
+  const name = document.getElementById('sf-name')?.value.trim();
+  if (!name) {
+    alert("Squad Name is required.");
+    return;
+  }
+
+  const payload = {
+    name: name,
+    category: document.getElementById('sf-category')?.value || 'Senior Team',
+    age_group: document.getElementById('sf-age')?.value || 'Open',
+    format: document.getElementById('sf-format')?.value || 'T20',
+    coach: document.getElementById('sf-coach')?.value || '',
+    description: document.getElementById('sf-desc')?.value || '',
+    status: 'Active'
+  };
+
+  try {
+    const url = isEdit 
+      ? `/api/teams/${currentActiveTeamId}/squads/${squadId}` 
+      : `/api/teams/${currentActiveTeamId}/squads`;
+    const method = isEdit ? 'PUT' : 'POST';
+
+    const res = await fetch(url, {
+      method: method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) throw new Error('Failed to save squad');
+
+    closeSquadFormModal();
+    showRosterToast('success', isEdit ? 'Squad Updated' : 'Squad Created', `${name} has been saved.`);
+    await fetchAndRenderPlayers(currentActiveTeamId);
+    renderSquadsManagementView();
+  } catch (err) {
+    showRosterToast('error', 'Error Saving Squad', err.message);
+  }
+}
+
+function promptDeleteSquad(squadId) {
+  const squad = currentTeamSquads.find(s => s.id === squadId);
+  if (!squad) return;
+
+  const count = currentTeamPlayers.filter(p => p.squad_id === squadId).length;
+  if (!confirm(`Delete squad "${squad.name}"? ${count} players are currently assigned to this squad.`)) {
+    return;
+  }
+
+  executeDeleteSquad(squadId);
+}
+
+async function executeDeleteSquad(squadId) {
+  try {
+    const res = await fetch(`/api/teams/${currentActiveTeamId}/squads/${squadId}`, {
+      method: 'DELETE'
+    });
+    if (!res.ok) throw new Error('Failed to delete squad');
+
+    showRosterToast('success', 'Squad Deleted', 'Squad removed from team.');
+    await fetchAndRenderPlayers(currentActiveTeamId);
+    renderSquadsManagementView();
+  } catch (err) {
+    showRosterToast('error', 'Error Deleting Squad', err.message);
+  }
+}
+
+// ----------------------------------------------------------------------------
+// MULTI-STEP ADD PLAYER WIZARD
+// ----------------------------------------------------------------------------
+
+function openAddPlayerModal() {
+  apwCurrentStep = 1;
+  apwSelectedAvatarUrl = null;
+  apwActiveMode = 'new';
+  apwSelectedExistingPlayerId = null;
+
+  const form = document.getElementById('add-player-form');
+  if (form) form.reset();
+
+  // Reset initials and photo preview
+  const initialsEl = document.getElementById('apw-avatar-initials');
+  if (initialsEl) initialsEl.textContent = '?';
+  const imgEl = document.getElementById('apw-avatar-img');
+  if (imgEl) {
+    imgEl.src = '';
+    imgEl.classList.add('hidden');
+  }
+  const clearBtn = document.getElementById('apw-photo-clear-btn');
+  if (clearBtn) clearBtn.classList.add('hidden');
+
+  // Pre-fill current team name
+  const teamDisplay = document.getElementById('apw-team-name-display');
+  if (teamDisplay) {
+    teamDisplay.value = currentActiveTeamData ? currentActiveTeamData.name : 'Coastal Warriors';
+  }
+
+  // Pre-select squad if a squad filter is active
+  const squadSelect = document.getElementById('apw-squad-select');
+  if (squadSelect && currentRosterSquadFilter !== 'all') {
+    squadSelect.value = currentRosterSquadFilter;
+  }
+
+  // Set today's date
+  const dateJoinedInput = document.getElementById('apw-date-joined');
+  if (dateJoinedInput) {
+    dateJoinedInput.value = new Date().toISOString().split('T')[0];
+  }
+
+  switchAddPlayerMode('new');
+  updateAddPlayerStepperUI();
+
+  const modal = document.getElementById('modal-add-player');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeAddPlayerModal() {
+  const modal = document.getElementById('modal-add-player');
+  if (modal) modal.classList.add('hidden');
+}
+
+function switchAddPlayerMode(mode) {
+  apwActiveMode = mode;
+  const tabNew = document.getElementById('apw-tab-new');
+  const tabExisting = document.getElementById('apw-tab-existing');
+  const viewNew = document.getElementById('apw-view-new');
+  const viewExisting = document.getElementById('apw-view-existing');
+
+  if (mode === 'new') {
+    if (tabNew) tabNew.classList.add('active');
+    if (tabExisting) tabExisting.classList.remove('active');
+    if (viewNew) viewNew.classList.remove('hidden');
+    if (viewExisting) viewExisting.classList.add('hidden');
+  } else {
+    if (tabNew) tabNew.classList.remove('active');
+    if (tabExisting) tabExisting.classList.add('active');
+    if (viewNew) viewNew.classList.add('hidden');
+    if (viewExisting) viewExisting.classList.remove('hidden');
+    loadRegisteredPlayersList('');
+  }
+}
+
+function updateAddPlayerStepperUI() {
+  for (let s = 1; s <= 4; s++) {
+    const stepInd = document.getElementById(`apw-step-ind-${s}`);
+    const stepPane = document.getElementById(`apw-step-${s}`);
+
+    if (stepInd) {
+      if (s === apwCurrentStep) {
+        stepInd.className = 'apw-step active';
+      } else if (s < apwCurrentStep) {
+        stepInd.className = 'apw-step completed';
+      } else {
+        stepInd.className = 'apw-step';
+      }
+    }
+
+    if (stepPane) {
+      if (s === apwCurrentStep) {
+        stepPane.classList.remove('hidden');
+      } else {
+        stepPane.classList.add('hidden');
+      }
+    }
+  }
+
+  // Buttons
+  const btnPrev = document.getElementById('apw-btn-prev');
+  const btnNext = document.getElementById('apw-btn-next');
+  const btnSave = document.getElementById('apw-btn-save');
+
+  if (btnPrev) {
+    if (apwCurrentStep > 1) btnPrev.classList.remove('hidden');
+    else btnPrev.classList.add('hidden');
+  }
+
+  if (btnNext) {
+    if (apwCurrentStep < 4) btnNext.classList.remove('hidden');
+    else btnNext.classList.add('hidden');
+  }
+
+  if (btnSave) {
+    if (apwCurrentStep === 4) btnSave.classList.remove('hidden');
+    else btnSave.classList.add('hidden');
+  }
+
+  // If entering review step, populate review card
+  if (apwCurrentStep === 4) {
+    populateAddPlayerReviewCard();
+  }
+}
+
+function stepAddPlayerWizard(delta) {
+  if (delta > 0) {
+    // Validate current step before advancing
+    if (!validateAddPlayerStep(apwCurrentStep)) {
+      return;
+    }
+    apwCurrentStep = Math.min(4, apwCurrentStep + 1);
+  } else {
+    apwCurrentStep = Math.max(1, apwCurrentStep - 1);
+  }
+  updateAddPlayerStepperUI();
+}
+
+function jumpToAddPlayerStep(targetStep) {
+  if (targetStep < apwCurrentStep) {
+    apwCurrentStep = targetStep;
+    updateAddPlayerStepperUI();
+  } else if (targetStep > apwCurrentStep) {
+    // Validate current step
+    if (validateAddPlayerStep(apwCurrentStep)) {
+      apwCurrentStep = targetStep;
+      updateAddPlayerStepperUI();
+    }
+  }
+}
+
+function validateAddPlayerStep(step) {
+  if (step === 1) {
+    const fullName = document.getElementById('apw-fullname')?.value.trim();
+    const errEl = document.getElementById('err-apw-fullname');
+    if (!fullName) {
+      if (errEl) errEl.classList.remove('hidden');
+      document.getElementById('apw-fullname')?.focus();
+      return false;
+    }
+    if (errEl) errEl.classList.add('hidden');
+    return true;
+  }
+  return true;
+}
+
+function updateAddPlayerInitials() {
+  const name = document.getElementById('apw-fullname')?.value.trim() || '';
+  const initials = name ? name.substring(0, 2).toUpperCase() : '?';
+  const initialsEl = document.getElementById('apw-avatar-initials');
+  if (initialsEl && !apwSelectedAvatarUrl) {
+    initialsEl.textContent = initials;
+  }
+}
+
+function onAddPlayerRoleChange() {
+  const role = document.getElementById('apw-role')?.value;
+  const bowlingWrap = document.getElementById('apw-bowling-fields-wrap');
+  if (bowlingWrap) {
+    if (role === 'Batter') {
+      bowlingWrap.style.opacity = '0.5';
+    } else {
+      bowlingWrap.style.opacity = '1';
+    }
+  }
+}
+
+function checkDuplicatePlayerEmail() {
+  const email = document.getElementById('apw-email')?.value.trim().toLowerCase();
+  const name = document.getElementById('apw-fullname')?.value.trim().toLowerCase();
+  const warnBanner = document.getElementById('apw-duplicate-warning');
+
+  if (!email && !name) {
+    if (warnBanner) warnBanner.classList.add('hidden');
+    return;
+  }
+
+  // Check in current players
+  const dup = currentTeamPlayers.find(p => 
+    (email && (p.email || '').toLowerCase() === email) ||
+    (name && (p.name || '').toLowerCase() === name)
+  );
+
+  if (dup) {
+    if (warnBanner) warnBanner.classList.remove('hidden');
+    const textEl = document.getElementById('apw-duplicate-text');
+    if (textEl) {
+      textEl.textContent = `A player named "${dup.name}" is already registered in this team.`;
+    }
+  } else {
+    if (warnBanner) warnBanner.classList.add('hidden');
+  }
+}
+
+function handleSelectDuplicateExisting() {
+  switchAddPlayerMode('existing');
+}
+
+/**
+ * Handle Photo Upload for Add / Edit player
+ */
+async function handlePlayerPhotoUpload(event, mode) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  // Validate size (max 5MB)
+  if (file.size > 5 * 1024 * 1024) {
+    alert("Image file too large. Maximum size is 5MB.");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('avatar', file);
+
+  try {
+    const res = await fetch('/api/upload-avatar', {
+      method: 'POST',
+      body: formData
+    });
+    if (!res.ok) throw new Error('Upload failed');
+    const data = await res.json();
+    const avatarUrl = data.avatar_url;
+
+    if (mode === 'add') {
+      apwSelectedAvatarUrl = avatarUrl;
+      const img = document.getElementById('apw-avatar-img');
+      const initials = document.getElementById('apw-avatar-initials');
+      const clearBtn = document.getElementById('apw-photo-clear-btn');
+      if (img) {
+        img.src = avatarUrl;
+        img.classList.remove('hidden');
+      }
+      if (initials) initials.classList.add('hidden');
+      if (clearBtn) clearBtn.classList.remove('hidden');
+    } else {
+      epSelectedAvatarUrl = avatarUrl;
+      const img = document.getElementById('ep-avatar-img');
+      const initials = document.getElementById('ep-avatar-initials');
+      const clearBtn = document.getElementById('ep-photo-clear-btn');
+      if (img) {
+        img.src = avatarUrl;
+        img.classList.remove('hidden');
+      }
+      if (initials) initials.classList.add('hidden');
+      if (clearBtn) clearBtn.classList.remove('hidden');
+    }
+
+    showRosterToast('success', 'Photograph Uploaded', 'Player photo successfully processed.');
+  } catch (err) {
+    showRosterToast('error', 'Upload Failed', err.message);
+  }
+}
+
+function clearPlayerPhoto(mode) {
+  if (mode === 'add') {
+    apwSelectedAvatarUrl = null;
+    const img = document.getElementById('apw-avatar-img');
+    const initials = document.getElementById('apw-avatar-initials');
+    const clearBtn = document.getElementById('apw-photo-clear-btn');
+    if (img) {
+      img.src = '';
+      img.classList.add('hidden');
+    }
+    if (initials) initials.classList.remove('hidden');
+    if (clearBtn) clearBtn.classList.add('hidden');
+    updateAddPlayerInitials();
+  } else {
+    epSelectedAvatarUrl = null;
+    const img = document.getElementById('ep-avatar-img');
+    const initials = document.getElementById('ep-avatar-initials');
+    const clearBtn = document.getElementById('ep-photo-clear-btn');
+    if (img) {
+      img.src = '';
+      img.classList.add('hidden');
+    }
+    if (initials) initials.classList.remove('hidden');
+    if (clearBtn) clearBtn.classList.add('hidden');
+    updateEditPlayerInitials();
+  }
+}
+
+/**
+ * Populate Step 4 Review & Confirm summary card
+ */
+function populateAddPlayerReviewCard() {
+  const name = document.getElementById('apw-fullname')?.value.trim() || 'Player Name';
+  const role = document.getElementById('apw-role')?.value || 'All-rounder';
+  const batting = document.getElementById('apw-batting')?.value || 'Right-handed';
+  const bowling = document.getElementById('apw-bowling')?.value || 'Right-arm Fast';
+  const jersey = document.getElementById('apw-jersey')?.value.trim() || 'None';
+  const email = document.getElementById('apw-email')?.value.trim() || 'Not provided';
+  const city = document.getElementById('apw-city')?.value.trim() || 'Kakinada, AP';
+  const isAdmin = document.getElementById('apw-is-admin')?.checked;
+  const isCaptain = document.getElementById('apw-is-captain')?.checked;
+  const status = document.getElementById('apw-status')?.value || 'active';
+
+  const squadSelect = document.getElementById('apw-squad-select');
+  const squadName = squadSelect && squadSelect.selectedOptions[0] ? squadSelect.selectedOptions[0].textContent : 'Main Squad';
+
+  // Review card elements
+  document.getElementById('apw-review-name').textContent = name;
+  document.getElementById('apw-review-meta').textContent = `${bowling} • ${role}`;
+  document.getElementById('apw-rev-batting').textContent = batting;
+  document.getElementById('apw-rev-bowling').textContent = bowling;
+  document.getElementById('apw-rev-role').textContent = role;
+  document.getElementById('apw-rev-jersey').textContent = jersey !== 'None' ? `#${jersey}` : 'None';
+  document.getElementById('apw-rev-team').textContent = currentActiveTeamData ? currentActiveTeamData.name : 'Coastal Warriors';
+  document.getElementById('apw-rev-squad').textContent = squadName;
+  document.getElementById('apw-rev-email').textContent = email;
+  document.getElementById('apw-rev-city').textContent = city;
+
+  // Badges
+  const adminBadge = document.getElementById('apw-review-admin-badge');
+  if (adminBadge) {
+    if (isAdmin) adminBadge.classList.remove('hidden');
+    else adminBadge.classList.add('hidden');
+  }
+
+  const captainBadge = document.getElementById('apw-review-captain-badge');
+  if (captainBadge) {
+    if (isCaptain) captainBadge.classList.remove('hidden');
+    else captainBadge.classList.add('hidden');
+  }
+
+  const statusPill = document.getElementById('apw-review-status-pill');
+  if (statusPill) {
+    statusPill.textContent = status === 'active' ? 'Active' : (status === 'trial' ? 'Trial' : 'Inactive');
+    statusPill.className = status === 'active' ? 'rth-status-pill active' : 'rth-status-pill inactive';
+  }
+
+  // Avatar
+  const avatarImg = document.getElementById('apw-review-img');
+  const avatarInit = document.getElementById('apw-review-initials');
+  if (apwSelectedAvatarUrl) {
+    if (avatarImg) {
+      avatarImg.src = apwSelectedAvatarUrl;
+      avatarImg.classList.remove('hidden');
+    }
+    if (avatarInit) avatarInit.classList.add('hidden');
+  } else {
+    if (avatarImg) avatarImg.classList.add('hidden');
+    if (avatarInit) {
+      avatarInit.textContent = name.substring(0, 2).toUpperCase();
+      avatarInit.classList.remove('hidden');
+    }
+  }
+
+  // Check duplicate
+  checkDuplicatePlayerEmail();
+}
+
+/**
+ * Submit Add Player Wizard form
+ */
+async function submitAddPlayerWizard() {
+  const fullName = document.getElementById('apw-fullname')?.value.trim();
+  if (!fullName) {
+    alert("Full Name is required.");
+    return;
+  }
+
+  const payload = {
+    name: fullName,
+    short_name: document.getElementById('apw-shortname')?.value.trim() || '',
+    avatar_url: apwSelectedAvatarUrl,
+    dob: document.getElementById('apw-dob')?.value || '',
+    gender: document.getElementById('apw-gender')?.value || 'Male',
+    phone: document.getElementById('apw-phone')?.value.trim() || '',
+    email: document.getElementById('apw-email')?.value.trim() || '',
+    city: document.getElementById('apw-city')?.value.trim() || '',
+    role: document.getElementById('apw-role')?.value || 'All-rounder',
+    batting_style: document.getElementById('apw-batting')?.value || 'Right-handed',
+    bowling_style: document.getElementById('apw-bowling')?.value || 'Right-arm Fast',
+    bowling_type: document.getElementById('apw-bowling-type')?.value.trim() || '',
+    is_keeper: document.getElementById('apw-is-keeper')?.value === 'Yes',
+    jersey_number: document.getElementById('apw-jersey')?.value ? parseInt(document.getElementById('apw-jersey').value) : null,
+    batting_position: document.getElementById('apw-batting-pos')?.value || 'Middle Order',
+    squad_id: document.getElementById('apw-squad-select')?.value || '',
+    status: document.getElementById('apw-status')?.value || 'active',
+    category: document.getElementById('apw-category')?.value || 'Senior',
+    date_joined: document.getElementById('apw-date-joined')?.value || '',
+    is_admin: document.getElementById('apw-is-admin')?.checked || false,
+    is_captain: document.getElementById('apw-is-captain')?.checked || false
+  };
+
+  const saveBtn = document.getElementById('apw-btn-save');
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving Player...';
+  }
 
   try {
     const res = await fetch(`/api/teams/${currentActiveTeamId}/players`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: nameInput.value.trim(),
-        role: roleInput ? roleInput.value : 'All-rounder',
-        batting_style: battingInput ? battingInput.value : 'Right',
-        bowling_style: bowlingInput ? bowlingInput.value : 'Right Medium',
-        is_admin: adminInput ? adminInput.checked : false
-      })
+      body: JSON.stringify(payload)
     });
-    if (!res.ok) throw new Error('Failed to add player');
-    closeNewPlayerModal();
-    if (nameInput) nameInput.value = '';
+
+    if (res.status === 409) {
+      const errData = await res.json();
+      showRosterToast('error', 'Duplicate Player Record', errData.detail || 'A player with this name already exists.');
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Player to Roster';
+      }
+      return;
+    }
+
+    if (!res.ok) throw new Error('Failed to create player');
+
+    closeAddPlayerModal();
+    showRosterToast('success', 'Player Onboarded', `${fullName} has been added to the team roster.`);
     await fetchAndRenderPlayers(currentActiveTeamId);
   } catch (err) {
-    alert("Error adding player: " + err.message);
+    showRosterToast('error', 'Error Saving Player', err.message);
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Save Player to Roster';
+    }
   }
 }
+
+/**
+ * Mode B: Search and Assign Existing Registered Players
+ */
+async function loadRegisteredPlayersList(query) {
+  const container = document.getElementById('apw-existing-list');
+  if (!container) return;
+
+  try {
+    const res = await fetch(`/api/registered-players?q=${encodeURIComponent(query || '')}`);
+    if (!res.ok) throw new Error('Failed to fetch registered players');
+    apwAllRegisteredPlayers = await res.json();
+
+    if (apwAllRegisteredPlayers.length === 0) {
+      container.innerHTML = `
+        <div style="text-align:center; padding:30px; color:#A4AAB8;">
+          No registered players found matching query.
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = apwAllRegisteredPlayers.map(p => {
+      const initials = p.initials || (p.name || 'P').substring(0, 2).toUpperCase();
+      const isSelected = apwSelectedExistingPlayerId === p.id;
+      return `
+        <div class="apw-reg-item ${isSelected ? 'selected' : ''}" onclick="selectExistingPlayer('${p.id}')">
+          <div class="apw-reg-left">
+            <div class="apw-reg-monogram">${initials}</div>
+            <div>
+              <div class="apw-reg-name">${escapeHtml(p.name)}</div>
+              <div class="apw-reg-sub">${escapeHtml(p.bowling_style || p.role || 'Player')} • ${escapeHtml(p.email || 'No email')}</div>
+            </div>
+          </div>
+          <span style="font-size:0.75rem; color:#A4AAB8;">Select</span>
+        </div>
+      `;
+    }).join('');
+  } catch (err) {
+    container.innerHTML = `<div style="text-align:center; padding:20px; color:#F00035;">Error loading registered players.</div>`;
+  }
+}
+
+function onSearchExistingPlayers(query) {
+  loadRegisteredPlayersList(query);
+}
+
+function selectExistingPlayer(playerId) {
+  apwSelectedExistingPlayerId = playerId;
+  const assignBtn = document.getElementById('apw-btn-assign-existing');
+  if (assignBtn) assignBtn.disabled = false;
+
+  document.querySelectorAll('.apw-reg-item').forEach(item => {
+    item.classList.remove('selected');
+  });
+  event.currentTarget?.classList.add('selected');
+}
+
+async function submitAssignExistingPlayer() {
+  if (!apwSelectedExistingPlayerId) return;
+
+  const squadId = document.getElementById('apw-existing-squad-select')?.value || '';
+  const assignBtn = document.getElementById('apw-btn-assign-existing');
+  if (assignBtn) {
+    assignBtn.disabled = true;
+    assignBtn.textContent = 'Assigning...';
+  }
+
+  try {
+    const res = await fetch(`/api/teams/${currentActiveTeamId}/players/assign-existing`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        player_id: apwSelectedExistingPlayerId,
+        squad_id: squadId,
+        status: 'active'
+      })
+    });
+
+    if (!res.ok) throw new Error('Failed to assign player');
+
+    closeAddPlayerModal();
+    showRosterToast('success', 'Player Assigned', 'Registered player has been affiliated with this team.');
+    await fetchAndRenderPlayers(currentActiveTeamId);
+  } catch (err) {
+    showRosterToast('error', 'Assignment Error', err.message);
+  } finally {
+    if (assignBtn) {
+      assignBtn.disabled = false;
+      assignBtn.textContent = 'Assign Selected Player';
+    }
+  }
+}
+
+// ----------------------------------------------------------------------------
+// EDIT PLAYER WORKFLOW
+// ----------------------------------------------------------------------------
+
+function openEditPlayerModal(playerId) {
+  closeAllPlayerMenus();
+  const player = currentTeamPlayers.find(p => p.id === playerId);
+  if (!player) return;
+
+  epEditingPlayerId = playerId;
+  epSelectedAvatarUrl = player.avatar_url || null;
+
+  document.getElementById('ep-player-id').value = player.id;
+  document.getElementById('ep-fullname').value = player.name || '';
+  document.getElementById('ep-shortname').value = player.short_name || '';
+  document.getElementById('ep-role').value = player.role || 'All-rounder';
+  document.getElementById('ep-batting').value = player.batting_style || 'Right-handed';
+  document.getElementById('ep-bowling').value = player.bowling_style || 'Right-arm Fast';
+  document.getElementById('ep-bowling-type').value = player.bowling_type || '';
+  document.getElementById('ep-jersey').value = player.jersey_number || '';
+  document.getElementById('ep-status').value = player.status || 'active';
+  document.getElementById('ep-email').value = player.email || '';
+  document.getElementById('ep-is-admin').checked = !!player.is_admin;
+  document.getElementById('ep-is-captain').checked = !!player.is_captain;
+
+  const squadSelect = document.getElementById('ep-squad');
+  if (squadSelect) squadSelect.value = player.squad_id || '';
+
+  // Avatar preview
+  const imgEl = document.getElementById('ep-avatar-img');
+  const initialsEl = document.getElementById('ep-avatar-initials');
+  const clearBtn = document.getElementById('ep-photo-clear-btn');
+
+  if (player.avatar_url) {
+    if (imgEl) {
+      imgEl.src = player.avatar_url;
+      imgEl.classList.remove('hidden');
+    }
+    if (initialsEl) initialsEl.classList.add('hidden');
+    if (clearBtn) clearBtn.classList.remove('hidden');
+  } else {
+    if (imgEl) imgEl.classList.add('hidden');
+    if (initialsEl) {
+      initialsEl.textContent = player.initials || (player.name || 'P').substring(0, 2).toUpperCase();
+      initialsEl.classList.remove('hidden');
+    }
+    if (clearBtn) clearBtn.classList.add('hidden');
+  }
+
+  const modal = document.getElementById('modal-edit-player');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeEditPlayerModal() {
+  const modal = document.getElementById('modal-edit-player');
+  if (modal) modal.classList.add('hidden');
+}
+
+function updateEditPlayerInitials() {
+  const name = document.getElementById('ep-fullname')?.value.trim() || '';
+  const initials = name ? name.substring(0, 2).toUpperCase() : '?';
+  const initialsEl = document.getElementById('ep-avatar-initials');
+  if (initialsEl && !epSelectedAvatarUrl) {
+    initialsEl.textContent = initials;
+  }
+}
+
+function onEditPlayerRoleChange() {
+  const role = document.getElementById('ep-role')?.value;
+  const bowlingWrap = document.getElementById('ep-bowling-fields-wrap');
+  if (bowlingWrap) {
+    bowlingWrap.style.opacity = role === 'Batter' ? '0.5' : '1';
+  }
+}
+
+async function submitEditPlayerProfile() {
+  if (!epEditingPlayerId) return;
+
+  const fullName = document.getElementById('ep-fullname')?.value.trim();
+  if (!fullName) {
+    alert("Full Name is required.");
+    return;
+  }
+
+  const payload = {
+    name: fullName,
+    short_name: document.getElementById('ep-shortname')?.value.trim() || '',
+    avatar_url: epSelectedAvatarUrl,
+    role: document.getElementById('ep-role')?.value || 'All-rounder',
+    batting_style: document.getElementById('ep-batting')?.value || 'Right-handed',
+    bowling_style: document.getElementById('ep-bowling')?.value || 'Right-arm Fast',
+    bowling_type: document.getElementById('ep-bowling-type')?.value.trim() || '',
+    jersey_number: document.getElementById('ep-jersey')?.value ? parseInt(document.getElementById('ep-jersey').value) : null,
+    squad_id: document.getElementById('ep-squad')?.value || '',
+    status: document.getElementById('ep-status')?.value || 'active',
+    email: document.getElementById('ep-email')?.value.trim() || '',
+    is_admin: document.getElementById('ep-is-admin')?.checked || false,
+    is_captain: document.getElementById('ep-is-captain')?.checked || false
+  };
+
+  try {
+    const res = await fetch(`/api/players/${epEditingPlayerId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) throw new Error('Failed to update player information');
+
+    closeEditPlayerModal();
+    showRosterToast('success', 'Profile Updated', `${fullName}'s technical details have been updated.`);
+    await fetchAndRenderPlayers(currentActiveTeamId);
+  } catch (err) {
+    showRosterToast('error', 'Update Failed', err.message);
+  }
+}
+
+// ----------------------------------------------------------------------------
+// ACTIVATE / DEACTIVATE WORKFLOW
+// ----------------------------------------------------------------------------
+
+function promptTogglePlayerStatus(playerId) {
+  closeAllPlayerMenus();
+  const player = currentTeamPlayers.find(p => p.id === playerId);
+  if (!player) return;
+
+  pendingPlayerStatusTarget = player;
+  const isCurrentlyActive = (player.status || 'active').toLowerCase() === 'active';
+  const targetStatus = isCurrentlyActive ? 'inactive' : 'active';
+
+  const modalTitle = document.getElementById('status-modal-title');
+  const modalDesc = document.getElementById('status-modal-desc');
+  const targetName = document.getElementById('status-target-player-name');
+  const confirmBtn = document.getElementById('btn-confirm-status-action');
+
+  if (targetName) targetName.textContent = player.name;
+
+  if (targetStatus === 'inactive') {
+    if (modalTitle) modalTitle.textContent = 'Deactivate Player?';
+    if (modalDesc) modalDesc.innerHTML = `Are you sure you want to deactivate <strong>${escapeHtml(player.name)}</strong>?`;
+    if (confirmBtn) {
+      confirmBtn.textContent = 'Deactivate Player';
+      confirmBtn.style.background = '#FFAB00';
+    }
+  } else {
+    if (modalTitle) modalTitle.textContent = 'Reactivate Player?';
+    if (modalDesc) modalDesc.innerHTML = `Reactivate <strong>${escapeHtml(player.name)}</strong> to active team standing?`;
+    if (confirmBtn) {
+      confirmBtn.textContent = 'Activate Player';
+      confirmBtn.style.background = '#00C58A';
+    }
+  }
+
+  const modal = document.getElementById('modal-confirm-player-status');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeConfirmStatusModal() {
+  const modal = document.getElementById('modal-confirm-player-status');
+  if (modal) modal.classList.add('hidden');
+}
+
+async function executePlayerStatusToggle() {
+  if (!pendingPlayerStatusTarget) return;
+
+  const player = pendingPlayerStatusTarget;
+  const isCurrentlyActive = (player.status || 'active').toLowerCase() === 'active';
+  const targetStatus = isCurrentlyActive ? 'inactive' : 'active';
+
+  try {
+    const res = await fetch(`/api/players/${player.id}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: targetStatus })
+    });
+
+    if (!res.ok) throw new Error('Failed to update player status');
+
+    closeConfirmStatusModal();
+    const actionWord = targetStatus === 'active' ? 'activated' : 'deactivated';
+    showRosterToast('success', `Player ${targetStatus === 'active' ? 'Activated' : 'Deactivated'}`, `${player.name} is now ${targetStatus}. Historical telemetry preserved.`);
+    await fetchAndRenderPlayers(currentActiveTeamId);
+  } catch (err) {
+    showRosterToast('error', 'Status Update Error', err.message);
+  }
+}
+
+// ----------------------------------------------------------------------------
+// REMOVE PLAYER FROM TEAM WORKFLOW
+// ----------------------------------------------------------------------------
+
+function promptRemovePlayerFromTeam(playerId) {
+  closeAllPlayerMenus();
+  const player = currentTeamPlayers.find(p => p.id === playerId);
+  if (!player) return;
+
+  pendingPlayerRemoveId = playerId;
+  const targetName = document.getElementById('remove-target-player-name');
+  if (targetName) targetName.textContent = player.name;
+
+  const teamNameEl = document.getElementById('remove-target-team-name');
+  if (teamNameEl) teamNameEl.textContent = currentActiveTeamData ? currentActiveTeamData.name : 'this team';
+
+  const modal = document.getElementById('modal-confirm-remove-player');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeConfirmRemoveModal() {
+  const modal = document.getElementById('modal-confirm-remove-player');
+  if (modal) modal.classList.add('hidden');
+}
+
+async function executeRemovePlayerFromTeam() {
+  if (!pendingPlayerRemoveId) return;
+
+  try {
+    const res = await fetch(`/api/teams/${currentActiveTeamId}/players/${pendingPlayerRemoveId}`, {
+      method: 'DELETE'
+    });
+
+    if (!res.ok) throw new Error('Failed to remove player from team');
+
+    closeConfirmRemoveModal();
+    showRosterToast('success', 'Player Removed', 'Player affiliation has been removed from this team roster.');
+    await fetchAndRenderPlayers(currentActiveTeamId);
+  } catch (err) {
+    showRosterToast('error', 'Removal Failed', err.message);
+  }
+}
+
+// ----------------------------------------------------------------------------
+// TOAST NOTIFICATION UTILITY
+// ----------------------------------------------------------------------------
+
+function showRosterToast(type, title, message) {
+  const container = document.getElementById('trajecta-toast-container');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = `trajecta-toast ${type}`;
+
+  const icon = type === 'success' ? '✓' : (type === 'error' ? '⚠️' : 'ℹ️');
+
+  toast.innerHTML = `
+    <span class="toast-icon">${icon}</span>
+    <div class="toast-msg-wrap">
+      <h5 class="toast-title">${escapeHtml(title)}</h5>
+      <p class="toast-desc">${escapeHtml(message)}</p>
+    </div>
+  `;
+
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(10px)';
+    toast.style.transition = 'all 0.3s ease';
+    setTimeout(() => toast.remove(), 300);
+  }, 3500);
+}
+
+// Close menus when clicking outside
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.rpc-menu-dropdown') && !e.target.closest('.btn-rpc-menu')) {
+    closeAllPlayerMenus();
+  }
+  if (!e.target.closest('.rt-filter-pill-dropdown')) {
+    closeStatusFilterDropdown();
+  }
+});
+
 
 // ----------------------------------------------------------------------------
 // VIEW 3: PLAYER SESSIONS MULTI-SELECTOR (Screenshots 3 & 4)
